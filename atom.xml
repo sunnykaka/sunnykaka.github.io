@@ -4,7 +4,7 @@
   <title><![CDATA[skaka的博客]]></title>
   <link href="http://sunnykaka.github.io/atom.xml" rel="self"/>
   <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-06-09T17:37:14+08:00</updated>
+  <updated>2015-06-09T18:20:29+08:00</updated>
   <id>http://sunnykaka.github.io/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -19,6 +19,8 @@
     <updated>2015-05-28T16:12:13+08:00</updated>
     <id>http://sunnykaka.github.io/blog/2015/05/28/hello-world</id>
     <content type="html"><![CDATA[<p><img src="http://sunnykaka.github.io/images/custom/20150609/280.jpg"></p>
+
+<p><strong>你好啊</strong> 你是? abcd</p>
 ]]></content>
   </entry>
   
