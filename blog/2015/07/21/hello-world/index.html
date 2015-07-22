@@ -1134,6 +1134,54 @@ prod一般会会使用dist命令将项目打包，可用以下方式启动（假
 现在已经改成直接调用Kamon API完成记录。</p>
 
 <p>Enjoy!</p>
+
+<h3>7.附启动和停止脚本</h3>
+
+<h4>1.启动脚本 start_stats.sh</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='Scala'><span class='line'><span class="o">#!/</span><span class="n">bin</span><span class="o">/</span><span class="n">sh</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">export</span> <span class="nc">GRAPHITE_STORAGE_DIR</span><span class="o">=</span><span class="err">&#39;</span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">graphite</span><span class="o">/</span><span class="n">storage</span><span class="err">&#39;</span>
+</span><span class='line'><span class="n">export</span> <span class="nc">GRAPHITE_CONF_DIR</span><span class="o">=</span><span class="err">&#39;</span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">graphite</span><span class="o">/</span><span class="n">conf</span><span class="err">&#39;</span>
+</span><span class='line'><span class="n">nohup</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">graphite</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">carbon</span><span class="o">-</span><span class="n">cache</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">debug</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="o">~/</span><span class="n">logs</span><span class="o">/</span><span class="n">kamon</span><span class="o">/</span><span class="n">carbon</span><span class="o">.</span><span class="n">out</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span> <span class="o">&amp;</span>
+</span><span class='line'><span class="n">export</span> <span class="nc">PYTHONPATH</span><span class="o">=</span><span class="err">&#39;</span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">graphite</span><span class="o">/</span><span class="n">webapp</span><span class="err">&#39;</span>
+</span><span class='line'><span class="n">nohup</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">gunicorn_django</span> <span class="o">-</span><span class="n">b127</span><span class="o">.</span><span class="mf">0.0</span><span class="o">.</span><span class="mi">1</span><span class="k">:</span><span class="err">8000</span> <span class="kt">-w2</span> <span class="kt">/opt/graphite/webapp/graphite/settings.py</span>  <span class="kt">&gt;</span> <span class="kt">~/logs/kamon/graphite.out</span> <span class="err">2</span><span class="kt">&gt;&amp;</span><span class="err">1</span> <span class="kt">&amp;</span>
+</span><span class='line'><span class="n">nohup</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">node</span> <span class="o">~/</span><span class="n">src</span><span class="o">/</span><span class="n">statsd</span><span class="o">/</span><span class="n">stats</span><span class="o">.</span><span class="n">js</span> <span class="o">~/</span><span class="n">src</span><span class="o">/</span><span class="n">statsd</span><span class="o">/</span><span class="n">config</span><span class="o">.</span><span class="n">js</span>  <span class="o">&gt;</span> <span class="o">~/</span><span class="n">logs</span><span class="o">/</span><span class="n">kamon</span><span class="o">/</span><span class="n">graphite</span><span class="o">.</span><span class="n">out</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span> <span class="o">&amp;</span>
+</span><span class='line'><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">init</span><span class="o">.</span><span class="n">d</span><span class="o">/</span><span class="n">elasticsearch</span> <span class="n">start</span>
+</span><span class='line'><span class="n">cd</span> <span class="o">~/</span><span class="n">src</span><span class="o">/</span><span class="n">dashboards</span>
+</span><span class='line'><span class="n">nohup</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">node</span> <span class="n">dashboard</span><span class="o">-</span><span class="n">loader</span><span class="o">.</span><span class="n">js</span> <span class="n">system</span><span class="o">-</span><span class="n">metrics</span><span class="o">.</span><span class="n">json</span>  <span class="n">welcome</span><span class="o">.</span><span class="n">json</span>   <span class="o">&gt;</span> <span class="o">~/</span><span class="n">logs</span><span class="o">/</span><span class="n">kamon</span><span class="o">/</span><span class="n">grafana</span><span class="o">.</span><span class="n">out</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span> <span class="o">&amp;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>2.启动脚本 start_stats.sh</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='Scala'><span class='line'><span class="o">#!/</span><span class="n">bin</span><span class="o">/</span><span class="n">sh</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">pkill</span> <span class="n">carbon</span>
+</span><span class='line'><span class="n">pkill</span> <span class="n">gunicorn_django</span>
+</span><span class='line'><span class="n">pkill</span> <span class="n">statsd</span>
+</span><span class='line'><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">init</span><span class="o">.</span><span class="n">d</span><span class="o">/</span><span class="n">elasticsearch</span> <span class="n">stop</span>
+</span><span class='line'><span class="n">kill</span> <span class="n">$</span><span class="o">(</span><span class="n">ps</span> <span class="n">aux</span> <span class="o">|</span> <span class="n">grep</span> <span class="-Symbol">&#39;node</span> <span class="n">dashboard</span><span class="o">-</span><span class="n">loader</span><span class="o">.</span><span class="n">js</span><span class="err">&#39;</span> <span class="o">|</span> <span class="n">awk</span> <span class="err">&#39;</span><span class="o">{</span><span class="n">print</span> <span class="n">$2</span><span class="o">}</span><span class="err">&#39;</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
 </div>
 
 
