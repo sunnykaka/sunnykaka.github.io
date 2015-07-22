@@ -4,7 +4,7 @@
   <title><![CDATA[skaka的博客]]></title>
   <link href="http://sunnykaka.github.io/atom.xml" rel="self"/>
   <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-07-22T14:22:38+08:00</updated>
+  <updated>2015-07-22T14:41:29+08:00</updated>
   <id>http://sunnykaka.github.io/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[使用StatsD, Graphite, Grafana, Kamon搭建可视化性能监控系统]]></title>
+    <title type="html"><![CDATA[使用StatsD, Graphite, Grafana, Kamon搭建可用于JVM项目的可视化性能监控系统]]></title>
     <link href="http://sunnykaka.github.io/blog/2015/07/21/hello-world/"/>
     <updated>2015-07-21T16:12:13+08:00</updated>
     <id>http://sunnykaka.github.io/blog/2015/07/21/hello-world</id>
