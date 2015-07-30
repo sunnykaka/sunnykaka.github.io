@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Java | skaka的博客]]></title>
   <link href="http://sunnykaka.github.io/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-07-30T20:23:04+08:00</updated>
+  <updated>2015-07-30T20:46:43+08:00</updated>
   <id>http://sunnykaka.github.io/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -57,6 +57,11 @@ Web容器存在的必要性也<a href="https://jaxenter.com/java-application-ser
 Servlet还带来一个问题，就是有状态的服务器。一旦使用了Session，服务器就无法享受到水平扩展的好处了，由此不得不采用Session复制或者粘性Session(Sticky Session)的
 方案来解决这个问题，无论采取哪种方案都会有性能损耗，并且推高了技术成本。Servlet说到底是Java EE家族的一员，由于Sun的领导（Oracle背锅），
 从Java EE 5开始，Java EE的角色已经从技术创新者转换为跟随者，这些年基本上可以说是跟着开源社区的步子在走的，除了政府大单和跨国企业，你很难再看见它的身影了。</p>
+
+<!-- more -->
+
+
+<p></p>
 
 <p>至于语言，其实从JDK8开始，Java已经很好用了。不过从JDK5到JDK8，十年太长，尤其是在Web。</p>
 

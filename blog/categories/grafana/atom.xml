@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Grafana | skaka的博客]]></title>
   <link href="http://sunnykaka.github.io/blog/categories/grafana/atom.xml" rel="self"/>
   <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-07-30T20:23:04+08:00</updated>
+  <updated>2015-07-30T20:46:43+08:00</updated>
   <id>http://sunnykaka.github.io/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[使用StatsD, Graphite, Grafana, Kamon搭建可用于JVM项目的可视化性能监控系统]]></title>
-    <link href="http://sunnykaka.github.io/blog/2015/07/21/hello-world/"/>
+    <link href="http://sunnykaka.github.io/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/"/>
     <updated>2015-07-21T16:12:13+08:00</updated>
-    <id>http://sunnykaka.github.io/blog/2015/07/21/hello-world</id>
+    <id>http://sunnykaka.github.io/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction</id>
     <content type="html"><![CDATA[<h3>1. 什么是性能监控系统</h3>
 
 <p>这里说的性能监控系统，主要侧重点是监控应用系统的性能。
@@ -43,6 +43,9 @@
 - Trace Metrics是业务请求的统计图表。例如每个请求的响应时间，以及某个时间段内各请求数量的统计对比。<br/>
 - OS Metrics一看就知道是操作系统的统计图表了。<br/>
 - JVM Metrics是JVM的统计图表。</p>
+
+<!-- more -->
+
 
 <h3>3. StatsD, Graphite, Grafana, Kamon简介</h3>
 
