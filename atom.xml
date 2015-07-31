@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[skaka的博客]]></title>
-  <link href="http://sunnykaka.github.io/atom.xml" rel="self"/>
-  <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-07-31T15:25:50+08:00</updated>
-  <id>http://sunnykaka.github.io/</id>
+  <link href="http://skaka.me/atom.xml" rel="self"/>
+  <link href="http://skaka.me/"/>
+  <updated>2015-07-31T16:03:11+08:00</updated>
+  <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景]]></title>
-    <link href="http://sunnykaka.github.io/blog/2015/07/27/play1/"/>
+    <link href="http://skaka.me/blog/2015/07/27/play1/"/>
     <updated>2015-07-27T16:46:32+08:00</updated>
-    <id>http://sunnykaka.github.io/blog/2015/07/27/play1</id>
+    <id>http://skaka.me/blog/2015/07/27/play1</id>
     <content type="html"><![CDATA[<h3>1. 关于这篇系列</h3>
 
 <p>这篇系列不是Play框架的Hello World，因为这样的文章网上已经有很多。</p>
@@ -38,7 +38,7 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
 <h3>3. 为什么要了解Play</h3>
 
 <p>现在的Web框架或者类库可以说是浩如烟海。近十年来，在Web开发领域，JVM阵营的占有率一直不高，
-<img src="http://sunnykaka.github.io/images/custom/20150728/frameworks.png">
+<img src="http://skaka.me/images/custom/20150728/frameworks.png">
 数据来源(<a href="http://hotframeworks.com/#rankings">http://hotframeworks.com/#rankings</a>)<br/>
 这是国外开源项目的数据，相对来说国内Java框架的使用率会高一些。而最近几年，Ruby和Python在国内的开发群体也在不断壮大。
 Java框架在Web领域不那么受欢迎，主要原因在于开发速度远落后于其他的开发框架。对于初创公司而言，快速开发出产品投入市场试错比花半年打磨出一款功能性能齐备的
@@ -283,7 +283,7 @@ Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测
 <h3>6.总结</h3>
 
 <p>Play2可以算是一个现代化的框架，吸收了RoR诸多优点，同时又解决了Java开发中的一些痛点，在国外已经被大量使用。参见
-<img src="http://sunnykaka.github.io/images/custom/20150728/playframework2.png">
+<img src="http://skaka.me/images/custom/20150728/playframework2.png">
 数据来源(<a href="http://www.infoq.com/research/jvm-web-frameworks">http://www.infoq.com/research/jvm-web-frameworks</a>)</p>
 
 <p>Play和Spring MVC的定位有些相似，但是比Spring MVC提供更丰富的功能，和Web有关的项目都可以使用Play。但是如果要用好Play，对团队有一定的要求。</p>
@@ -303,9 +303,9 @@ Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测
   
   <entry>
     <title type="html"><![CDATA[使用StatsD, Graphite, Grafana, Kamon搭建可用于JVM项目的可视化性能监控系统]]></title>
-    <link href="http://sunnykaka.github.io/blog/2015/07/21/hello-world/"/>
+    <link href="http://skaka.me/blog/2015/07/21/hello-world/"/>
     <updated>2015-07-21T16:12:13+08:00</updated>
-    <id>http://sunnykaka.github.io/blog/2015/07/21/hello-world</id>
+    <id>http://skaka.me/blog/2015/07/21/hello-world</id>
     <content type="html"><![CDATA[<h3>1. 什么是性能监控系统</h3>
 
 <p>这里说的性能监控系统，主要侧重点是监控应用系统的性能。
@@ -323,8 +323,8 @@ Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测
 <h3>2. 监控系统UI</h3>
 
 <p>介绍搭建步骤之前，先来看一看搭好后的界面。
-<img src="http://sunnykaka.github.io/images/custom/20150721/grafana1.png">
-<img src="http://sunnykaka.github.io/images/custom/20150721/grafana2.png">
+<img src="http://skaka.me/images/custom/20150721/grafana1.png">
+<img src="http://skaka.me/images/custom/20150721/grafana2.png">
 转自(<a href="https://github.com/kamon-io/docker-grafana-graphite">https://github.com/kamon-io/docker-grafana-graphite</a>)<br/>
 这里包含4部分的图表。<br/>
 - Actor Metrics是Akka Actor的统计图表。因为我的项目中没有直接使用Akka，所以暂时忽略这一部分内容。<br/>

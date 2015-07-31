@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Scala | skaka的博客]]></title>
-  <link href="http://sunnykaka.github.io/blog/categories/scala/atom.xml" rel="self"/>
-  <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-07-31T15:25:50+08:00</updated>
-  <id>http://sunnykaka.github.io/</id>
+  <link href="http://skaka.me/blog/categories/scala/atom.xml" rel="self"/>
+  <link href="http://skaka.me/"/>
+  <updated>2015-07-31T16:03:11+08:00</updated>
+  <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景]]></title>
-    <link href="http://sunnykaka.github.io/blog/2015/07/27/play1/"/>
+    <link href="http://skaka.me/blog/2015/07/27/play1/"/>
     <updated>2015-07-27T16:46:32+08:00</updated>
-    <id>http://sunnykaka.github.io/blog/2015/07/27/play1</id>
+    <id>http://skaka.me/blog/2015/07/27/play1</id>
     <content type="html"><![CDATA[<h3>1. 关于这篇系列</h3>
 
 <p>这篇系列不是Play框架的Hello World，因为这样的文章网上已经有很多。</p>

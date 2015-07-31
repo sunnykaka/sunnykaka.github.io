@@ -1,38 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>http://sunnykaka.github.io/blog/2015/07/27/play1/</loc>
+    <loc>http://skaka.me/blog/2015/07/27/play1/</loc>
     <lastmod>2015-07-27T16:46:32+08:00</lastmod>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/2015/07/21/hello-world/</loc>
+    <loc>http://skaka.me/blog/2015/07/21/hello-world/</loc>
     <lastmod>2015-07-21T16:12:13+08:00</lastmod>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/archives/</loc>
+    <loc>http://skaka.me/blog/archives/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/</loc>
+    <loc>http://skaka.me/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/categories/statsd/</loc>
+    <loc>http://skaka.me/blog/categories/statsd/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/categories/graphite/</loc>
+    <loc>http://skaka.me/blog/categories/graphite/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/categories/grafana/</loc>
+    <loc>http://skaka.me/blog/categories/grafana/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/categories/kamon/</loc>
+    <loc>http://skaka.me/blog/categories/kamon/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/categories/play-framework/</loc>
+    <loc>http://skaka.me/blog/categories/play-framework/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/categories/java/</loc>
+    <loc>http://skaka.me/blog/categories/java/</loc>
   </url>
   <url>
-    <loc>http://sunnykaka.github.io/blog/categories/scala/</loc>
+    <loc>http://skaka.me/blog/categories/scala/</loc>
   </url>
 </urlset>
