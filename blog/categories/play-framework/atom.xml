@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Play Framework | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/play-framework/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2015-08-14T09:59:23+08:00</updated>
+  <updated>2015-08-14T10:00:45+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -44,9 +44,6 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
 Java框架在Web领域不那么受欢迎，主要原因在于开发速度远落后于其他的开发框架。对于初创公司而言，快速开发出产品投入市场试错比花半年打磨出一款功能性能齐备的
 应用更加重要，而对于成熟产品，也需要快速响应频繁的需求变化，这方面动态语言又更胜一筹。所以说到Web后端框架的技术选型，除非技术团队有比较深的JVM背景，
 否则会倾向于选择RoR，Django这些框架。</p>
-
-<p>在Java领域，使用最多的就是SpringMVC了。SpringMVC和Play很相似，但是有本质的不同。SpringMVC是一个使用了Servlet规范的类库，
-而Play则是一个提供了运行时环境，类库，</p>
 
 <p>JVM阵营在Web领域逐渐落后主要有三个原因：编译的锅，技术栈的锅和语言的锅。</p>
 
