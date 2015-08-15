@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[skaka的博客]]></title>
-  <link href="http://sunnykaka.github.io/atom.xml" rel="self"/>
-  <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-07-30T20:46:43+08:00</updated>
-  <id>http://sunnykaka.github.io/</id>
+  <link href="http://skaka.me/atom.xml" rel="self"/>
+  <link href="http://skaka.me/"/>
+  <updated>2015-08-15T10:34:09+08:00</updated>
+  <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景]]></title>
-    <link href="http://sunnykaka.github.io/blog/2015/07/27/play1/"/>
+    <link href="http://skaka.me/blog/2015/07/27/play1/"/>
     <updated>2015-07-27T16:46:32+08:00</updated>
-    <id>http://sunnykaka.github.io/blog/2015/07/27/play1</id>
+    <id>http://skaka.me/blog/2015/07/27/play1</id>
     <content type="html"><![CDATA[<h3>1. 关于这篇系列</h3>
 
 <p>这篇系列不是Play框架的Hello World，因为这样的文章网上已经有很多。</p>
@@ -38,14 +38,14 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
 <h3>3. 为什么要了解Play</h3>
 
 <p>现在的Web框架或者类库可以说是浩如烟海。近十年来，在Web开发领域，JVM阵营的占有率一直不高，
-<img src="http://sunnykaka.github.io/images/custom/20150728/frameworks.png">
+<img src="http://skaka.me/images/custom/20150728/frameworks.png">
 数据来源(<a href="http://hotframeworks.com/#rankings">http://hotframeworks.com/#rankings</a>)<br/>
 这是国外开源项目的数据，相对来说国内Java框架的使用率会高一些。而最近几年，Ruby和Python在国内的开发群体也在不断壮大。
 Java框架在Web领域不那么受欢迎，主要原因在于开发速度远落后于其他的开发框架。对于初创公司而言，快速开发出产品投入市场试错比花半年打磨出一款功能性能齐备的
 应用更加重要，而对于成熟产品，也需要快速响应频繁的需求变化，这方面动态语言又更胜一筹。所以说到Web后端框架的技术选型，除非技术团队有比较深的JVM背景，
 否则会倾向于选择RoR，Django这些框架。</p>
 
-<p>我认为开发速度慢主要有三个原因：编译的锅，技术栈的锅和语言的锅。</p>
+<p>JVM阵营在Web领域逐渐落后主要有三个原因：编译的锅，技术栈的锅和语言的锅。</p>
 
 <p>大家都知道Java源代码需要编译之后才能运行，直接结果是每次修改源代码都需要重启Web服务器才能看到效果。如果项目比较小类也少，重启时间还勉强能接受。
 我以前参与的一个项目，使用的是WebLogic服务器，Spring容器里大概有上千个Bean，重启一次至少得花5分钟，还是优化后的结果。工作时间至少有20%花在重启上了。
@@ -61,15 +61,15 @@ Servlet还带来一个问题，就是有状态的服务器。一旦使用了Sess
 <!-- more -->
 
 
-<p></p>
+<p>
+至于语言，其实从JDK8开始，Java已经很好用了。不过从JDK5到JDK8，十年太长，尤其是在Web。</p>
 
-<p>至于语言，其实从JDK8开始，Java已经很好用了。不过从JDK5到JDK8，十年太长，尤其是在Web。</p>
-
-<p>近几年JVM领域也出现了一些相当优秀的框架，如<a href="http://www.dropwizard.io">Dropwizard</a>，<a href="https://playframework.com">Play</a>，<a href="http://vertx.io/">Vert.x</a>。
+<p>之前Java阵营受累于没有成熟的快速开发框架，Spring热衷于提供各种集成方案，可是配置和使用还是相当的麻烦，直到Spring Boot的出现才有改善。
+不过近几年出现了一些相当优秀的框架，如<a href="http://www.dropwizard.io">Dropwizard</a>，<a href="https://playframework.com">Play</a>，<a href="http://vertx.io/">Vert.x</a>。
 这篇系列要介绍的Play，通过ClassLoader在源代码修改的时候动态加载类，解决了修改代码需要重启服务器的问题，完全抛弃了Servlet技术栈，基于Netty实现了自己的
-请求响应接口（Request/Result），基于Play的应用就是无状态的，另外Play处理Request的方式是无阻塞的（Non-Blocking）。Play2在设计的时候借鉴了RoR的许多优点，
+请求响应接口（Request/Result），基于Play的应用就是无状态的，另外Play处理请求的方式是无阻塞的（Non-Blocking）。Play2在设计的时候借鉴了RoR的许多优点，
 学习Play能够让你了解一些现代化框架的特点，同时能够为你打开异步编程世界的大门。Promise已经被Scala，JavaScript等语言大量使用，Actor模型也已经遍地开花，
-你可以直接在Play中使用它们，或者你想保持原来的编程风格也完全没有问题。</p>
+这些你都可以直接在Play中使用，或者你想保持原来的编程风格也完全没有问题。</p>
 
 <h3>4. Play的特性</h3>
 
@@ -220,7 +220,7 @@ login.scala.html</p>
 <h4>7. 优秀的测试支持</h4>
 
 <p>因为Play诞生的时候TDD已经很火热，所以Play对测试的支持非常好。
-通过Helpers.fakeApplication()一行代码就能模拟出一个Application(Play中的Application你可以理解为类似于Spring的Context)。</p>
+例如下面的几行代码就能对Controller进行测试。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -231,8 +231,7 @@ login.scala.html</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>三行代码就能对Controller进行测试。如果要测试完整的Http请求，可以通过fakeServer在测试中启动一个Play应用，通过请求这个Play应用来完成测试。
-Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测试。以下是官方的例子：</p>
+<p>Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测试。以下是官方的例子：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -288,7 +287,7 @@ Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测
 <h3>6.总结</h3>
 
 <p>Play2可以算是一个现代化的框架，吸收了RoR诸多优点，同时又解决了Java开发中的一些痛点，在国外已经被大量使用。参见
-<img src="http://sunnykaka.github.io/images/custom/20150728/playframework2.png">
+<img src="http://skaka.me/images/custom/20150728/playframework2.png">
 数据来源(<a href="http://www.infoq.com/research/jvm-web-frameworks">http://www.infoq.com/research/jvm-web-frameworks</a>)</p>
 
 <p>Play和Spring MVC的定位有些相似，但是比Spring MVC提供更丰富的功能，和Web有关的项目都可以使用Play。但是如果要用好Play，对团队有一定的要求。</p>
@@ -308,9 +307,9 @@ Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测
   
   <entry>
     <title type="html"><![CDATA[使用StatsD, Graphite, Grafana, Kamon搭建可用于JVM项目的可视化性能监控系统]]></title>
-    <link href="http://sunnykaka.github.io/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/"/>
+    <link href="http://skaka.me/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/"/>
     <updated>2015-07-21T16:12:13+08:00</updated>
-    <id>http://sunnykaka.github.io/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction</id>
+    <id>http://skaka.me/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction</id>
     <content type="html"><![CDATA[<h3>1. 什么是性能监控系统</h3>
 
 <p>这里说的性能监控系统，主要侧重点是监控应用系统的性能。
@@ -328,8 +327,8 @@ Play还内置了对 Selenium WebDriver的支持，可以模拟浏览器进行测
 <h3>2. 监控系统UI</h3>
 
 <p>介绍搭建步骤之前，先来看一看搭好后的界面。
-<img src="http://sunnykaka.github.io/images/custom/20150721/grafana1.png">
-<img src="http://sunnykaka.github.io/images/custom/20150721/grafana2.png">
+<img src="http://skaka.me/images/custom/20150721/grafana1.png">
+<img src="http://skaka.me/images/custom/20150721/grafana2.png">
 转自(<a href="https://github.com/kamon-io/docker-grafana-graphite">https://github.com/kamon-io/docker-grafana-graphite</a>)<br/>
 这里包含4部分的图表。<br/>
 - Actor Metrics是Akka Actor的统计图表。因为我的项目中没有直接使用Akka，所以暂时忽略这一部分内容。<br/>

@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Graphite | skaka的博客]]></title>
-  <link href="http://sunnykaka.github.io/blog/categories/graphite/atom.xml" rel="self"/>
-  <link href="http://sunnykaka.github.io/"/>
-  <updated>2015-07-30T20:46:43+08:00</updated>
-  <id>http://sunnykaka.github.io/</id>
+  <link href="http://skaka.me/blog/categories/graphite/atom.xml" rel="self"/>
+  <link href="http://skaka.me/"/>
+  <updated>2015-08-15T10:34:09+08:00</updated>
+  <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[使用StatsD, Graphite, Grafana, Kamon搭建可用于JVM项目的可视化性能监控系统]]></title>
-    <link href="http://sunnykaka.github.io/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/"/>
+    <link href="http://skaka.me/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/"/>
     <updated>2015-07-21T16:12:13+08:00</updated>
-    <id>http://sunnykaka.github.io/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction</id>
+    <id>http://skaka.me/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction</id>
     <content type="html"><![CDATA[<h3>1. 什么是性能监控系统</h3>
 
 <p>这里说的性能监控系统，主要侧重点是监控应用系统的性能。
