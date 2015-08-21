@@ -1,0 +1,1011 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发 - skaka的博客</title>
+  <meta name="author" content="skaka">
+
+  
+  <meta name="description" content="对Java使用者介绍PlayFramework，Play的用法，学习Play的教程">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://skaka.me/blog/2015/08/17/play2/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="skaka的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  -->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-63902363-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!--
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-63902363-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = 'https://raw.githubusercontent.com/sunnykaka/data/master/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+-->
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">skaka的博客</a></h1>
+  
+    <h2>every flight begins with a fall</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="skaka.me">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-08-17T20:19:50+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:19 pm</span></time>
+        
+        
+         | <a href="#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h3>1. 介绍</h3>
+
+<p>这篇文章会使用Play，Spring，JPA（hibernate）开发一个简单的CRUD功能，主要是为了介绍如何使用Play进行开发。</p>
+
+<h3>2. 界面截图</h3>
+
+<p><img src="/images/custom/20150818/play2_1.png">
+<img src="/images/custom/20150818/play2_2.png">
+很简单的新增和查询功能。我们来看看代码如何实现。</p>
+
+<h3>3. 代码实现</h3>
+
+<h4>1. Model</h4>
+
+<p>代码架构使用典型的MVC，分层为Controller-Service-Dao-Model。首先来看Model。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//省略了部分字段</span>
+</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;test_object&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="nd">@Entity</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TestObject</span> <span class="kd">implements</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;,</span> <span class="n">OperableData</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Integer</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">orderNo</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 状态</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">TestObjectStatus</span> <span class="n">status</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//...</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 下单时间</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">DateTime</span> <span class="n">buyTime</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//...</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">TestObjectItem</span><span class="o">&gt;</span> <span class="n">testObjectItemList</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;(</span><span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">fetch</span> <span class="o">=</span> <span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">,</span> <span class="n">mappedBy</span> <span class="o">=</span> <span class="s">&quot;testObject&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">TestObjectItem</span><span class="o">&gt;</span> <span class="nf">getTestObjectItemList</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">testObjectItemList</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setTestObjectItemList</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">TestObjectItem</span><span class="o">&gt;</span> <span class="n">testObjectItemList</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">testObjectItemList</span> <span class="o">=</span> <span class="n">testObjectItemList</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">GenerationType</span><span class="o">.</span><span class="na">AUTO</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@Id</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Integer</span> <span class="nf">getId</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setId</span><span class="o">(</span><span class="n">Integer</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">id</span> <span class="o">=</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;status&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@Enumerated</span><span class="o">(</span><span class="n">EnumType</span><span class="o">.</span><span class="na">STRING</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">TestObjectStatus</span> <span class="nf">getStatus</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">status</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setStatus</span><span class="o">(</span><span class="n">TestObjectStatus</span> <span class="n">status</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">status</span> <span class="o">=</span> <span class="n">status</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;buy_time&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@Type</span><span class="o">(</span><span class="n">type</span><span class="o">=</span><span class="s">&quot;org.jadira.usertype.dateandtime.joda.PersistentDateTime&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">DateTime</span> <span class="nf">getBuyTime</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">buyTime</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setBuyTime</span><span class="o">(</span><span class="n">DateTime</span> <span class="n">buyTime</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">buyTime</span> <span class="o">=</span> <span class="n">buyTime</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>很普通的Entity，使用JPA注解，唯一需要注意的是在处理枚举类型和Joda DateTime类型的时候用到了不同的类型注解。</p>
+
+<h4>2. Dao</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//省略了部分方法</span>
+</span><span class='line'><span class="nd">@Repository</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">GeneralDao</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@PersistenceContext</span>
+</span><span class='line'>    <span class="n">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">GeneralDao</span><span class="o">(){}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">GeneralDao</span><span class="o">(</span><span class="n">EntityManager</span> <span class="n">em</span><span class="o">)</span> <span class="o">{</span><span class="k">this</span><span class="o">.</span><span class="na">em</span> <span class="o">=</span> <span class="n">em</span><span class="o">;}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">EntityManager</span> <span class="nf">getEm</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">em</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 使用jpql进行查询</span>
+</span><span class='line'><span class="cm">     * @param ql jpql</span>
+</span><span class='line'><span class="cm">     * @param page 分页对象,可选</span>
+</span><span class='line'><span class="cm">     * @param queryParams 查询参数</span>
+</span><span class='line'><span class="cm">     * @param &lt;T&gt;</span>
+</span><span class='line'><span class="cm">     * @return</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">query</span><span class="o">(</span><span class="n">String</span> <span class="n">ql</span><span class="o">,</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">Page</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span> <span class="n">page</span><span class="o">,</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&gt;</span> <span class="n">queryParams</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//...</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 使用jpql进行数据更新操作</span>
+</span><span class='line'><span class="cm">     * @param ql</span>
+</span><span class='line'><span class="cm">     * @param queryParams</span>
+</span><span class='line'><span class="cm">     * @return</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">update</span><span class="o">(</span><span class="n">String</span> <span class="n">ql</span><span class="o">,</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&gt;</span> <span class="n">queryParams</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//...</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span> <span class="kd">extends</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="kt">void</span> <span class="nf">persist</span><span class="o">(</span><span class="n">T</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">setOperableDataIfNecessary</span><span class="o">(</span><span class="n">t</span><span class="o">,</span> <span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">em</span><span class="o">.</span><span class="na">persist</span><span class="o">(</span><span class="n">t</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span> <span class="kd">extends</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="n">T</span> <span class="nf">merge</span><span class="o">(</span><span class="n">T</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">setOperableDataIfNecessary</span><span class="o">(</span><span class="n">t</span><span class="o">,</span> <span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">merge</span><span class="o">(</span><span class="n">t</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span> <span class="kd">extends</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="kt">boolean</span> <span class="nf">remove</span><span class="o">(</span><span class="n">T</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">t</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">em</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">t</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span> <span class="kd">extends</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="kt">boolean</span> <span class="nf">removeById</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">type</span><span class="o">,</span> <span class="n">Integer</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">T</span> <span class="n">t</span> <span class="o">=</span> <span class="n">get</span><span class="o">(</span><span class="n">type</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nf">remove</span><span class="o">(</span><span class="n">t</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span> <span class="kd">extends</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="n">T</span> <span class="nf">get</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">type</span><span class="o">,</span> <span class="n">Integer</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">em</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="n">type</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">flush</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">em</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span> <span class="kd">extends</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="kt">void</span> <span class="nf">refresh</span><span class="o">(</span><span class="n">T</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">em</span><span class="o">.</span><span class="na">refresh</span><span class="o">(</span><span class="n">t</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span> <span class="kd">extends</span> <span class="n">EntityClass</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="kt">void</span> <span class="nf">detach</span><span class="o">(</span><span class="n">T</span> <span class="n">t</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">em</span><span class="o">.</span><span class="na">detach</span><span class="o">(</span><span class="n">t</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里使用的是通用Dao，一般的增删改查操作可以直接通过该Dao完成。可以看出这个Dao只是对JPA的EntityManager一个简单封装，
+大部分操作还是委派给EntityManager完成。代码中也可以直接取得EntityManager进行操作。</p>
+
+<!-- more -->
+
+
+<h4>3. Service</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//省略了部分方法</span>
+</span><span class='line'><span class="nd">@Service</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TestObjectService</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@PersistenceContext</span>
+</span><span class='line'>    <span class="n">EntityManager</span> <span class="n">em</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Autowired</span>
+</span><span class='line'>    <span class="n">GeneralDao</span> <span class="n">generalDao</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="nf">findByKey</span><span class="o">(</span><span class="n">Optional</span><span class="o">&lt;</span><span class="n">Page</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;&gt;</span> <span class="n">page</span><span class="o">,</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">orderNo</span><span class="o">,</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">TestObjectStatus</span><span class="o">&gt;</span> <span class="n">status</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">Optional</span><span class="o">&lt;</span><span class="n">DateTime</span><span class="o">&gt;</span> <span class="n">createTimeStart</span><span class="o">,</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">DateTime</span><span class="o">&gt;</span> <span class="n">createTimeEnd</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">CriteriaBuilder</span> <span class="n">cb</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">getCriteriaBuilder</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">CriteriaQuery</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="n">cq</span> <span class="o">=</span> <span class="n">cb</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">TestObject</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Root</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="n">order</span> <span class="o">=</span> <span class="n">cq</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">TestObject</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">Predicate</span><span class="o">&gt;</span> <span class="n">predicateList</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">orderNo</span><span class="o">.</span><span class="na">isPresent</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">predicateList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">cb</span><span class="o">.</span><span class="na">equal</span><span class="o">(</span><span class="n">order</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;orderNo&quot;</span><span class="o">),</span> <span class="n">orderNo</span><span class="o">.</span><span class="na">get</span><span class="o">()));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">createTimeStart</span><span class="o">.</span><span class="na">isPresent</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">predicateList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">cb</span><span class="o">.</span><span class="na">greaterThanOrEqualTo</span><span class="o">(</span><span class="n">order</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;createTime&quot;</span><span class="o">),</span> <span class="n">createTimeStart</span><span class="o">.</span><span class="na">get</span><span class="o">()));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">createTimeEnd</span><span class="o">.</span><span class="na">isPresent</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">predicateList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">cb</span><span class="o">.</span><span class="na">lessThanOrEqualTo</span><span class="o">(</span><span class="n">order</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;createTime&quot;</span><span class="o">),</span> <span class="n">createTimeEnd</span><span class="o">.</span><span class="na">get</span><span class="o">()));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">.</span><span class="na">isPresent</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">predicateList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">cb</span><span class="o">.</span><span class="na">equal</span><span class="o">(</span><span class="n">order</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;status&quot;</span><span class="o">),</span> <span class="n">status</span><span class="o">.</span><span class="na">get</span><span class="o">()));</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">cq</span><span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">order</span><span class="o">).</span><span class="na">where</span><span class="o">(</span><span class="n">predicateList</span><span class="o">.</span><span class="na">toArray</span><span class="o">(</span><span class="k">new</span> <span class="n">Predicate</span><span class="o">[</span><span class="n">predicateList</span><span class="o">.</span><span class="na">size</span><span class="o">()])).</span><span class="na">orderBy</span><span class="o">(</span><span class="n">cb</span><span class="o">.</span><span class="na">desc</span><span class="o">(</span><span class="n">order</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;updateTime&quot;</span><span class="o">)));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">TypedQuery</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="n">query</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">cq</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">isPresent</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">CriteriaQuery</span><span class="o">&lt;</span><span class="n">Long</span><span class="o">&gt;</span> <span class="n">countCq</span> <span class="o">=</span> <span class="n">cb</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">countCq</span><span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="n">cb</span><span class="o">.</span><span class="na">count</span><span class="o">(</span><span class="n">countCq</span><span class="o">.</span><span class="na">from</span><span class="o">(</span><span class="n">TestObject</span><span class="o">.</span><span class="na">class</span><span class="o">))).</span><span class="na">where</span><span class="o">(</span><span class="n">predicateList</span><span class="o">.</span><span class="na">toArray</span><span class="o">(</span><span class="k">new</span> <span class="n">Predicate</span><span class="o">[</span><span class="n">predicateList</span><span class="o">.</span><span class="na">size</span><span class="o">()]));</span>
+</span><span class='line'>            <span class="n">Long</span> <span class="n">count</span> <span class="o">=</span> <span class="n">em</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">countCq</span><span class="o">).</span><span class="na">getSingleResult</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">page</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">setTotalCount</span><span class="o">(</span><span class="n">count</span><span class="o">.</span><span class="na">intValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">query</span><span class="o">.</span><span class="na">setFirstResult</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">getStart</span><span class="o">());</span>
+</span><span class='line'>            <span class="n">query</span><span class="o">.</span><span class="na">setMaxResults</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">getLimit</span><span class="o">());</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="n">results</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="na">getResultList</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">isPresent</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">page</span><span class="o">.</span><span class="na">get</span><span class="o">().</span><span class="na">setResult</span><span class="o">(</span><span class="n">results</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">results</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">TestObject</span> <span class="nf">get</span><span class="o">(</span><span class="n">Integer</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">generalDao</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">TestObject</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>findByKey方法是一个查询方法，这里使用的是JPA的Criteria查询。Service类没有使用接口，只有实现类。Service就是一个Spring管理的Bean，
+事务边界在Service层。</p>
+
+<h4>4. Controller</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//省略了部分方法</span>
+</span><span class='line'><span class="nd">@org.springframework.stereotype.Controller</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TestObjectController</span> <span class="kd">extends</span> <span class="n">Controller</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Autowired</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">TestObjectService</span> <span class="n">testObjectService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">list</span><span class="o">(</span><span class="n">String</span> <span class="n">status</span><span class="o">,</span> <span class="n">String</span> <span class="n">orderNo</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="n">testObjectList</span> <span class="o">=</span> <span class="n">testObjectService</span><span class="o">.</span><span class="na">findByKey</span><span class="o">(</span><span class="n">of</span><span class="o">(</span><span class="n">PageFactory</span><span class="o">.</span><span class="na">getPage</span><span class="o">(</span><span class="n">request</span><span class="o">())),</span> <span class="n">ofNullable</span><span class="o">(</span><span class="n">orderNo</span><span class="o">),</span>
+</span><span class='line'>                <span class="n">ofNullable</span><span class="o">(</span><span class="n">status</span><span class="o">).</span><span class="na">map</span><span class="o">(</span><span class="nl">TestObjectStatus:</span><span class="o">:</span><span class="n">valueOf</span><span class="o">),</span> <span class="n">empty</span><span class="o">(),</span> <span class="n">empty</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="nf">ok</span><span class="o">(</span><span class="n">list</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">testObjectList</span><span class="o">));</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">addPage</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nf">ok</span><span class="o">(</span><span class="n">add</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">Form</span><span class="o">.</span><span class="na">form</span><span class="o">(</span><span class="n">TestObject</span><span class="o">.</span><span class="na">class</span><span class="o">)));</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Result</span> <span class="nf">updatePage</span><span class="o">(</span><span class="n">Integer</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nf">ok</span><span class="o">(</span><span class="n">update</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">Form</span><span class="o">.</span><span class="na">form</span><span class="o">(</span><span class="n">TestObject</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">fill</span><span class="o">(</span><span class="n">testObjectService</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">id</span><span class="o">))));</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//...</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Controller继承play.mvc.Controller。和SpringMVC一样，在Play中，Controller就是一系列Action的集合。例如我开发用户有关的功能，
+那么我就建一个UserController，然后把用户的CRUD方法都放在UserController里，每个方法都有自己的路由规则。这里我们先来看list方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Result</span> <span class="nf">list</span><span class="o">(</span><span class="n">String</span> <span class="n">status</span><span class="o">,</span> <span class="n">String</span> <span class="n">orderNo</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="n">testObjectList</span> <span class="o">=</span> <span class="n">testObjectService</span><span class="o">.</span><span class="na">findByKey</span><span class="o">(</span><span class="n">of</span><span class="o">(</span><span class="n">PageFactory</span><span class="o">.</span><span class="na">getPage</span><span class="o">(</span><span class="n">request</span><span class="o">())),</span> <span class="n">ofNullable</span><span class="o">(</span><span class="n">orderNo</span><span class="o">),</span>
+</span><span class='line'>            <span class="n">ofNullable</span><span class="o">(</span><span class="n">status</span><span class="o">).</span><span class="na">map</span><span class="o">(</span><span class="nl">TestObjectStatus:</span><span class="o">:</span><span class="n">valueOf</span><span class="o">),</span> <span class="n">empty</span><span class="o">(),</span> <span class="n">empty</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nf">ok</span><span class="o">(</span><span class="n">list</span><span class="o">.</span><span class="na">render</span><span class="o">(</span><span class="n">testObjectList</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里list的功能是查询出所有满足条件的测试对象（TestObject对象）。首先来看参数，这里声明了两个查询参数status和orderNo，用来匹配Http请求QueryString中的参数，
+这和SpringMVC中声明了RequestParam(&ldquo;status&rdquo;)的参数类似。注意有一点区别，这里的status和orderNo不能捕捉通过Http Body提交的参数，只能匹配QueryString中的参数。</p>
+
+<p>Controller中调用service方法来完成查询，然后将结果返回。方法的返回值声明是play.mvc.Result接口，你可以理解Result的实现类只需要包含两个值：
+ResponseHeader和ResponseBody。对于ResponseHeader的设置，这里调用父类的ok方法设置返回的Http状态码为200，对应的还有created 201, notFound 404等方法。
+ok方法参数需要传入的就是ResponseBody，参数类型声明为play.twirl.api.Content特质（Scala中的特质类似于Java的接口），你基本上永远不需要去手动构造这个特质的实现，
+而是使用Play提供的模板。这里我在views.html.test目录下有一个list.scala.html模板，这个模板文件会被IDE自动编译成views.html.test.list类，类里面有一个render方法来完成模板的渲染，
+render方法返回值就是play.twirl.api.Content的子类。所以我在这里可以直接调用list.render(testObjectList)方法来完成模板的渲染。</p>
+
+<p>好了，现在来对照SpringMVC，如果是用SpringMVC的话，这个方法应该是这样的</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&quot;/test/objects&quot;</span><span class="o">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'><span class="nd">@ResponseStatus</span><span class="o">(</span><span class="n">HttpStatus</span><span class="o">.</span><span class="na">OK</span><span class="o">)</span>  <span class="c1">//可省略</span>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">list</span><span class="o">(</span><span class="n">String</span> <span class="n">status</span><span class="o">,</span> <span class="n">String</span> <span class="n">orderNo</span><span class="o">,</span> <span class="n">Model</span> <span class="n">model</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">TestObject</span><span class="o">&gt;</span> <span class="n">testObjectList</span> <span class="o">=</span> <span class="n">testObjectService</span><span class="o">.</span><span class="na">findByKey</span><span class="o">(</span><span class="n">of</span><span class="o">(</span><span class="n">PageFactory</span><span class="o">.</span><span class="na">getPage</span><span class="o">(</span><span class="n">request</span><span class="o">())),</span> <span class="n">ofNullable</span><span class="o">(</span><span class="n">orderNo</span><span class="o">),</span>
+</span><span class='line'>            <span class="n">ofNullable</span><span class="o">(</span><span class="n">status</span><span class="o">).</span><span class="na">map</span><span class="o">(</span><span class="nl">TestObjectStatus:</span><span class="o">:</span><span class="n">valueOf</span><span class="o">),</span> <span class="n">empty</span><span class="o">(),</span> <span class="n">empty</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">&quot;testObjectList&quot;</span><span class="o">,</span> <span class="n">testObjectList</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="s">&quot;views/html/test/list&quot;</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>细心的你可能已经发现了，Play的版本与SpringMVC的对照，少了一个路由的信息，那么在Play中怎么配置路由呢，请看下节</p>
+
+<h4>5. routes文件（路由）</h4>
+
+<p>在Play中，所有的路由信息都是统一放在一个文件里，即conf/routes文件。上面的list方法路由在routes中对应如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">GET</span>         <span class="o">/</span><span class="n">test</span><span class="o">/</span><span class="n">objects</span>                     <span class="nd">@controllers.test.TestObjectController.list</span><span class="o">(</span><span class="n">status</span> <span class="o">?=</span> <span class="kc">null</span><span class="o">,</span> <span class="n">orderNo</span> <span class="o">?=</span> <span class="kc">null</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最左边的GET声明的是Http Method，在Play中每个路由都要明确写出对应的Http Method，中间是路由的URI，最右边是映射的Controller方法。参数<code>status ?= null</code>代表参数是可选的，
+如果请求参数中没有status则默认值是null。routes文件的一大好处是在写映射Controller方法的时候IDE能帮助自动补全，并且编译器在编译的时候也能校验声明的参数个数与类型是否一致，
+这能有效的帮助开发者减少错误。路由也配好了，剩下的工作就是模板的编写。</p>
+
+<h4>6. 模板</h4>
+
+<p>list.scala.html</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>@(testObjects: List[ordercenter.models.TestObject])
+</span><span class='line'>
+</span><span class='line'>@import common.utils.DateUtils._
+</span><span class='line'>
+</span><span class='line'>@main()() {
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;breadcrumbs&quot;</span> <span class="na">id=</span><span class="s">&quot;breadcrumbs&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="k">try</span><span class="p">{</span><span class="nx">ace</span><span class="p">.</span><span class="nx">settings</span><span class="p">.</span><span class="nx">check</span><span class="p">(</span><span class="s1">&#39;breadcrumbs&#39;</span> <span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">)}</span><span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">){}</span>
+</span><span class='line'>        <span class="nt">&lt;/script&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nt">&lt;ul</span> <span class="na">class=</span><span class="s">&quot;breadcrumb&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;li&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;i</span> <span class="na">class=</span><span class="s">&quot;icon-home home-icon&quot;</span><span class="nt">&gt;&lt;/i&gt;</span>测试对象管理
+</span><span class='line'>            <span class="nt">&lt;/li&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">&quot;active&quot;</span><span class="nt">&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;@controllers.test.routes.TestObjectController.list()&quot;</span><span class="nt">&gt;</span>测试对象查询<span class="nt">&lt;/a&gt;&lt;/li&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/ul&gt;</span><span class="c">&lt;!-- .breadcrumb --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;page-content&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;page-header&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;h1&gt;</span>
+</span><span class='line'>                测试对象管理
+</span><span class='line'>                <span class="nt">&lt;small&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;i</span> <span class="na">class=</span><span class="s">&quot;icon-double-angle-right&quot;</span><span class="nt">&gt;&lt;/i&gt;</span>测试对象查询
+</span><span class='line'>                <span class="nt">&lt;/small&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/h1&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>            <span class="c">&lt;!-- /.page-header --&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;col-xs-12&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                    <span class="c">&lt;!-- PAGE CONTENT BEGINS --&gt;</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;col-xs-12&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;table-responsive&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                            <span class="nt">&lt;table</span> <span class="na">id=</span><span class="s">&quot;sample-table-1&quot;</span> <span class="na">class=</span><span class="s">&quot;table table-striped table-bordered table-hover&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                                <span class="nt">&lt;thead&gt;</span>
+</span><span class='line'>                                    <span class="nt">&lt;tr&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;th&gt;</span>状态<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;th&gt;</span>买家<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;th</span> <span class="na">class=</span><span class="s">&quot;hidden-480&quot;</span><span class="nt">&gt;</span>金额<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;th&gt;</span>下单时间<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;th&gt;&lt;/th&gt;</span>
+</span><span class='line'>                                    <span class="nt">&lt;/tr&gt;</span>
+</span><span class='line'>                                <span class="nt">&lt;/thead&gt;</span>
+</span><span class='line'>
+</span><span class='line'>                                <span class="nt">&lt;tbody&gt;</span>
+</span><span class='line'>                                @for(testObject <span class="nt">&lt;-</span> <span class="na">testObjects</span><span class="err">)</span> <span class="err">{</span>
+</span><span class='line'>                                    <span class="err">&lt;</span><span class="na">tr</span><span class="nt">&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;td&gt;</span>@testObject.getStatus.value<span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;td&gt;</span>@testObject.getBuyerId<span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;td&gt;</span>@testObject.getActualFee<span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;td&gt;</span>@printDateTime(testObject.getCreateTime) <span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;td&gt;</span>
+</span><span class='line'>                                            <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;visible-md visible-lg hidden-sm hidden-xs btn-group&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                                                <span class="nt">&lt;button</span> <span class="na">class=</span><span class="s">&quot;btn btn-xs btn-info&quot;</span> <span class="na">onclick=</span><span class="s">&quot;location.href=&#39;@controllers.test.routes.TestObjectController.updatePage(testObject.getId)&#39;&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                                                    <span class="nt">&lt;i</span> <span class="na">class=</span><span class="s">&quot;icon-edit bigger-120&quot;</span><span class="nt">&gt;&lt;/i&gt;</span>
+</span><span class='line'>                                                <span class="nt">&lt;/button&gt;</span>
+</span><span class='line'>                                                <span class="nt">&lt;button</span> <span class="na">class=</span><span class="s">&quot;btn btn-xs btn-success&quot;</span> <span class="na">onclick=</span><span class="s">&quot;location.href=&#39;@controllers.test.routes.TestObjectController.list()&#39;&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                                                    <span class="nt">&lt;i</span> <span class="na">class=</span><span class="s">&quot;icon-info bigger-120&quot;</span><span class="nt">&gt;&lt;/i&gt;</span>
+</span><span class='line'>                                                <span class="nt">&lt;/button&gt;</span>
+</span><span class='line'>                                            <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>                                        <span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                                    <span class="nt">&lt;/tr&gt;</span>
+</span><span class='line'>                                }
+</span><span class='line'>
+</span><span class='line'>                                <span class="nt">&lt;/tbody&gt;</span>
+</span><span class='line'>                            <span class="nt">&lt;/table&gt;</span>
+</span><span class='line'>                        <span class="nt">&lt;/div&gt;</span><span class="c">&lt;!-- /.table-responsive --&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;/div&gt;</span><span class="c">&lt;!-- /span --&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Play的模板引擎是<a href="https://github.com/playframework/twirl">Twirl</a>，关于这个引擎的介绍可以参考<a href="http://skaka.me/blog/2015/07/27/play1/">上一篇文章</a>。</p>
+
+<p><code>@(testObjects: List[ordercenter.models.TestObject])</code>是参数声明，写Play模板的时候，建议参数都通过这种声明的形式传入，而不是使用页面隐藏对象。
+因为编译器能够自动帮我们校验类型和个数，重构起来也会更方便。下面一行<code>@import common.utils.DateUtils._</code>引入了定义好的一个工具类，
+下面的<code>@printDateTime(testObject.getCreateTime)</code>用来格式化显示时间。</p>
+
+<p><code>@main()() {...}</code>的形式是调用main模板完成渲染，main模板前两个参数可以省略，第三个参数需要传入html代码。在Scala中，方法调用既可以用小括号，比如<code>println("ok")</code>，
+也可以用大括号<code>println{"ok"}</code>。而这里第三个参数使用的是大括号。<code>@for(testObject &lt;- testObjects){}</code>是循环的写法，这里循环testObjects，取出每一条记录用来显示。</p>
+
+<p><code>onclick="location.href='@controllers.test.routes.TestObjectController.list()'"</code>绑定了onClick事件，用户在点击的时候会跳转到测试对象的编辑页面。
+这里没有硬编码uri，而是使用routes反向路由的写法。之所以能这样写，是因为IDE在编译的时候会根据routes文件自动生成一个routes对象，
+对象里面的方法对应的就是我们配置好的controller方法映射。这里写的<code>@controllers.test.routes.TestObjectController.list()</code>在模板渲染的时候就会被替换成<code>/test/objects</code>这个URI。</p>
+
+<h3>4. 总结</h3>
+
+<p>这一篇主要介绍了Play在整合Spring和JPA之后是如何进行开发的。可以看出，开发Play应用与开发SSH应用没有太大区别，只是Controller和模板的写法有所不同，
+但是我们能很快享受到Play的便利：简单易用的模板，修改代码无需重启服务器，不需要配置外部服务器，etc。随着业务和技术的扩展，使用Play的项目更容易整合其他服务。
+例如整合监控工具<a href="http://skaka.me/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/">StatsD+Graphite+Grafana+Kamon</a>，Docker化，服务化。</p>
+
+<p>这篇文章我没有介绍如何启动应用，因为这需要一些开发环境的准备，以及了解SBT的基本用法。这些内容我会在下一篇博客介绍。这篇文章相关的代码已经提交到Github，<a href="TODO">项目地址</a>。
+这个项目整合了Play，Spring，JPA，数据存储使用MySQL和Redis，使用Bootstrap作为页面框架，可以作为脚手架项目给有兴趣的朋友进行研究。</p>
+
+<p>除此之外，感兴趣的朋友还可以下载<a href="http://www.typesafe.com/get-started">Typesafe Reactive Platform</a>进行学习。这这上面有很多关于Play，Akka的项目模板，
+并且你可以通过浏览器查看编辑这些代码，还可以直接运行。另外要进一步学习可以读<a href="http://www.amazon.com/Play-Java-Covers-2/dp/1617290904">这本书</a>，网上有电子版的。</p>
+
+<p>下篇我会介绍如何搭建开发环境，以及如何调试应用。掌握了之后，你会发现开发和调试过程原来还能这样直观和简单!</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">skaka</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-08-17T20:19:50+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:19 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/play-framework/'>play framework</a>, <a class='category' href='/blog/categories/scala/'>scala</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/07/27/play1/" title="Previous Post: 给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景">&laquo; 给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h1>Comments</h1>
+    <div id="comments" aria-live="polite"><!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread" data-title="给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发"></div>
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"skaka"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0]
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/08/17/play2/">给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/27/play1/">给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/">使用StatsD, Graphite, Grafana, Kamon搭建可用于JVM项目的可视化性能监控系统</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+  <h1>关于我</h1>
+  <p>我是刘斌，一名软件工程师，居住在深圳。</p>
+  <p>主要工作方向是Web与游戏服务器开发。最近正在学习移动开发。</p>
+  <p>你可以通过<a href="mailto:sunnykaka0721@gmail.com">email</a>联系我，或是<a href="http://weibo.com/sunnykaka">新浪微博</a></p>
+</section>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - skaka -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
