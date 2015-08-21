@@ -4,7 +4,7 @@
   <title><![CDATA[skaka的博客]]></title>
   <link href="http://skaka.me/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2015-08-21T09:12:30+08:00</updated>
+  <updated>2015-08-21T09:15:54+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -14,13 +14,19 @@
 
   
   <entry>
-    <title type="html"><![CDATA[给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发]]></title>
+    <title type="html"><![CDATA[Play2]]></title>
     <link href="http://skaka.me/blog/2015/08/17/play2/"/>
-    <updated>2015-08-17T20:19:50+08:00</updated>
+    <updated>2015-08-17T00:00:00+08:00</updated>
     <id>http://skaka.me/blog/2015/08/17/play2</id>
-    <content type="html"><![CDATA[<h3>1. 介绍</h3>
+    <content type="html"><![CDATA[<hr />
 
-<p>这篇文章会使用Play，Spring，JPA（hibernate）开发一个简单的CRUD功能，主要是为了介绍如何使用Play进行开发。</p>
+<p>layout: post
+title: &ldquo;给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发&rdquo;
+date: 2015-08-17 20:19:50 +0800
+comments: true
+categories: [Play Framework, Java, Scala]
+description: &ldquo;对Java使用者介绍PlayFramework，Play的用法
+这篇文章会使用Play，Spring，JPA（hibernate）开发一个简单的CRUD功能，主要是为了介绍如何使用Play进行开发。</p>
 
 <h3>2. 界面截图</h3>
 
@@ -778,7 +784,8 @@ render方法返回值就是play.twirl.api.Content的子类。所以我在这里�
 但是我们能很快享受到Play的便利：简单易用的模板，修改代码无需重启服务器，不需要配置外部服务器，etc。随着业务和技术的扩展，使用Play的项目更容易整合其他服务。
 例如整合监控工具<a href="http://skaka.me/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/">StatsD+Graphite+Grafana+Kamon</a>，Docker化，服务化。</p>
 
-<p>这篇文章我没有介绍如何启动应用，因为这需要一些开发环境的准备，以及了解SBT的基本用法。这些内容我会在下一篇博客介绍。这篇文章相关的代码已经提交到Github，<a href="TODO">项目地址</a>。
+<p>这篇文章我没有介绍如何启动应用，因为这需要一些开发环境的准备，以及了解SBT的基本用法。这些内容我会在下一篇博客介绍。这篇文章相关的代码已经提交到Github，
+<a href="https://github.com/sunnykaka/awesome-play">项目地址</a>。
 这个项目整合了Play，Spring，JPA，数据存储使用MySQL和Redis，使用Bootstrap作为页面框架，可以作为脚手架项目给有兴趣的朋友进行研究。</p>
 
 <p>除此之外，感兴趣的朋友还可以下载<a href="http://www.typesafe.com/get-started">Typesafe Reactive Platform</a>进行学习。这这上面有很多关于Play，Akka的项目模板，
