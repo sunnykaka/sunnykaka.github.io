@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Sbt | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/sbt/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2015-09-15T23:07:39+08:00</updated>
+  <updated>2015-12-28T21:55:55+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -26,8 +26,8 @@
 2.<a href="http://www.scala-lang.org/">Scala 2.11.6+</a><br/>
 3.<a href="http://www.scala-sbt.org/">sbt 0.13.7+</a><br/>
 4.<a href="https://www.jetbrains.com/idea/">IntelliJ IDEA 14+</a><br/>
-5.<a href="http://www.mysql.com/">MySQL 5.5+</a> 或 <a href="https://mariadb.org/">MariaDB 10+</a>
-6.<a href="http://redis.io/">Redis 2.7+</a>
+5.<a href="http://www.mysql.com/">MySQL 5.5+</a> 或 <a href="https://mariadb.org/">MariaDB 10+</a><br/>
+6.<a href="http://redis.io/">Redis 2.7+</a><br/>
 7.科学上网工具</p>
 
 <p>这些软件安装都可以参照官方的文档，这里就不介绍了。</p>
