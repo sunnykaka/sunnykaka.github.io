@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Sbt | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/sbt/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-04-09T11:52:53+08:00</updated>
+  <updated>2016-04-09T12:07:12+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -40,7 +40,7 @@ MySQL和Redis是这篇文章的demo项目启动需要的，如果不打算运行
 
 ### 2. 搭建开发环境
 我的操作系统是Ubuntu 14.04，所以下面涉及到命令或文件路径地方，可能都是Linux风格的。如果你的操作系统是Windows或OS X，需要做相应替换。
-
+<!-- more -->
 #### 1. 安装IDEA插件
 打开IDEA之后的第一件事就是要安装Scala插件，这个插件包含了对Scala, sbt, Play的支持。
 插件安装方法是点击左上角的Files->Settings->在弹出框的左上角输入plugins->点击弹出框底部靠中间位置的Install Jetbrains Plugins->输入Scala->点击Install。

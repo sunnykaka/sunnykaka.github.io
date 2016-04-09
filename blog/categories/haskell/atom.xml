@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Haskell | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/haskell/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-04-09T11:52:53+08:00</updated>
+  <updated>2016-04-09T12:07:12+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -54,7 +54,7 @@
 1. 接受函数和函子值，返回在函子值上映射函数的结果（返回也是函子值）。
 2. 接受函数，把该函数从操作普通类型的函数**提升**(lift)为操作函子值的函数。
 这就是函子，不难吧？
-
+<!--more-->
 ### 2. Applicative
 Applicative，俗称加强版函子，先来看Applicative类型类的代码:
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>

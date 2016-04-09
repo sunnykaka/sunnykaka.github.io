@@ -4,7 +4,7 @@
   <title><![CDATA[skaka的博客]]></title>
   <link href="http://skaka.me/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-04-09T11:52:53+08:00</updated>
+  <updated>2016-04-09T12:07:12+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -39,6 +39,9 @@
 例如Pinterest, Nest, Tumblr, 感兴趣的可以Google. Finagle有着较为丰富的生态圈, 例如可以使用<a href="https://github.com/finagle/finch">Finch</a>很方便的实现REST, 使用<a href="https://github.com/finagle/finagle-oauth2">Finagle OAuth2</a>实现OAuth认证, 使用<a href="http://twitter.github.io/zipkin/">zipkin</a>实现服务监控. Finagle使用Scala开发, 官方宣称同时支持Scala和Java语言.</p>
 
 <p>学习Finagle的使用之前, 首先要了解Finagle中的三个核心概念: Future, Service, Filter.</p>
+
+<!--more-->
+
 
 <h3>1. Future</h3>
 
@@ -282,6 +285,9 @@ Future在Finagle中无处不在, Finagle的设计哲理之一就是能异步的�
 2. 接受函数，把该函数从操作普通类型的函数<strong>提升</strong>(lift)为操作函子值的函数。
 这就是函子，不难吧？</p>
 
+<!--more-->
+
+
 <h3>2. Applicative</h3>
 
 <p>Applicative，俗称加强版函子，先来看Applicative类型类的代码:</p>
@@ -447,6 +453,9 @@ Monad在函数式编程中无处不在，来看看具体的例子。</p>
 <h3>2. 搭建开发环境</h3>
 
 <p>我的操作系统是Ubuntu 14.04，所以下面涉及到命令或文件路径地方，可能都是Linux风格的。如果你的操作系统是Windows或OS X，需要做相应替换。</p>
+
+<!-- more -->
+
 
 <h4>1. 安装IDEA插件</h4>
 
@@ -643,6 +652,9 @@ Scala环境。好在只要项目架构搭建好，这些复杂性可以隐藏起
 <h4>1. Model</h4>
 
 <p>代码架构使用典型的MVC，分层为Controller-Service-Dao-Model。首先来看Model。</p>
+
+<!-- more -->
+
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -944,9 +956,6 @@ Scala环境。好在只要项目架构搭建好，这些复杂性可以隐藏起
 
 <p>这里使用的是通用Dao，一般的增删改查操作可以直接通过该Dao完成。可以看出这个Dao只是对JPA的EntityManager一个简单封装，
 大部分操作还是委派给EntityManager完成。代码中也可以直接取得EntityManager进行操作。</p>
-
-<!-- more -->
-
 
 <h4>3. Service</h4>
 
@@ -1421,6 +1430,9 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
 这里主要介绍最新的Play2.4 for Java。有一点需要提前说明，虽然Play2主要由Scala开发，但是对于项目中的一般开发人员而言，
 使用Play可以完全不懂Scala，具体情况后面会说明。</p>
 
+<!-- more -->
+
+
 <h3>3. 为什么要了解Play</h3>
 
 <p>现在的Web框架或者类库可以说是浩如烟海。近十年来，在Web开发领域，JVM阵营的占有率一直不高，
@@ -1443,9 +1455,6 @@ Web容器存在的必要性也<a href="https://jaxenter.com/java-application-ser
 Servlet还带来一个问题，就是有状态的服务器。一旦使用了Session，服务器就无法享受到水平扩展的好处了，由此不得不采用Session复制或者粘性Session(Sticky Session)的
 方案来解决这个问题，无论采取哪种方案都会有性能损耗，并且推高了技术成本。Servlet说到底是Java EE家族的一员，由于Sun的领导（Oracle背锅），
 从Java EE 5开始，Java EE的角色已经从技术创新者转换为跟随者，这些年基本上可以说是跟着开源社区的步子在走的，除了政府大单和跨国企业，你很难再看见它的身影了。</p>
-
-<!-- more -->
-
 
 <p>至于语言，其实从JDK8开始，Java已经很好用了。不过从JDK5到JDK8，十年太长，尤其是在Web。</p>
 
@@ -1709,6 +1718,9 @@ login.scala.html</p>
 因为Kamon对这几个框架提供了AspectJ支持，在类加载的时候插入代码为你完成记录。
 其他情况你需要调用Kamon API来进行数据记录，这也非常的简单。</p>
 
+<!-- more -->
+
+
 <h3>2. 监控系统UI</h3>
 
 <p>介绍搭建步骤之前，先来看一看搭好后的界面。
@@ -1720,9 +1732,6 @@ login.scala.html</p>
 - Trace Metrics是业务请求的统计图表。例如每个请求的响应时间，以及某个时间段内各请求数量的统计对比。<br/>
 - OS Metrics一看就知道是操作系统的统计图表了。<br/>
 - JVM Metrics是JVM的统计图表。</p>
-
-<!-- more -->
-
 
 <h3>3. StatsD, Graphite, Grafana, Kamon简介</h3>
 
