@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 函数式编程 | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/han-shu-shi-bian-cheng/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2015-12-28T21:55:55+08:00</updated>
+  <updated>2016-04-09T11:52:53+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -18,125 +18,145 @@
     <link href="http://skaka.me/blog/2015/12/19/functor-applicative-monad-scala-haskell/"/>
     <updated>2015-12-19T20:22:10+08:00</updated>
     <id>http://skaka.me/blog/2015/12/19/functor-applicative-monad-scala-haskell</id>
-    <content type="html"><![CDATA[<p>如果你是刚接触函数式编程，可能很容易被下面这些术语弄迷惑：Functor(函子)，Applicative(加强版函子)，Monad(单子)。
+    <content type="html"><![CDATA[如果你是刚接触函数式编程，可能很容易被下面这些术语弄迷惑：Functor(函子)，Applicative(加强版函子)，Monad(单子)。
 这些概念不是空穴来风，它们出自范畴论，如果你上网去搜范畴论，可能会找到大篇的术语定义，学术资料，这些资料大多都不是入门友好的。
-这里我不会探讨定义，只会介绍这些概念在代码中到底起了什么样的作用，以及怎么样运用它们。</p>
+这里我不会探讨定义，只会介绍这些概念在代码中到底起了什么样的作用，以及怎么样运用它们。
 
-<p>下面的示例代码大部分是Haskell，有一小部分是Java8，不会Haskell完全没关系，你可以把它们看作伪代码，我会对每一段代码进行解释。
+下面的示例代码大部分是Haskell，有一小部分是Java8，不会Haskell完全没关系，你可以把它们看作伪代码，我会对每一段代码进行解释。
 这篇文章适合刚刚接触函数式编程的同学。我在刚接触这些概念的时候一头雾水，网上找的资料要么level太高看不懂，
 要么直接就blabla给你介绍一大片背景知识了。后来经过长时间的摸爬滚打加实践，我发现这些概念理解起来也不是很困难，所以就想写一篇入门级的介绍。
-如果你想要对函数式编程有一定的了解，这些概念你是绕不过去的，特别是Monad，当你发现你理解了Monad的机制，很多看起来不可思议的代码就能理解了。</p>
+如果你想要对函数式编程有一定的了解，这些概念你是绕不过去的，特别是Monad，当你发现你理解了Monad的机制，很多看起来不可思议的代码就能理解了。
 
-<p>开始之前，我简单介绍一下类型类(typeclass)和类型构造器的概念。函数式编程中的类型类是定义行为的接口。
+开始之前，我简单介绍一下类型类(typeclass)和类型构造器的概念。函数式编程中的类型类是定义行为的接口。
 如果一个类型是某个类型类的实例，那么这个类型必须实现所有该类型类所定义的行为。不要因为有“类”这个词就把类型类与面向对象中的类混淆，
 他们是完全不同的概念。类型构造器能够接收其他类型为参数，创建出新的类型。举个例子，Scala的List即为接收一个类型参数的类型构造器，
 当类型参数为Int时，List类型构造器的返回类型为List[Int]，当类型参数为String时，返回类型为List[String]。
-与类型构造器相对的概念是值构造器，比如Int(2)。</p>
+与类型构造器相对的概念是值构造器，比如Int(2)。
 
-<h3>1. Functor</h3>
+### 1. Functor
 
-<p>首先看看函子的类型类用代码怎么表示：
-<code>haskell
--- Haskell中一个函数如果有两个参数一个返回值，写法是这样: a(第一个参数) -&gt; b(第二个参数) -&gt; c(返回值)
-class Functor f where
-  fmap :: (a -&gt; b) -&gt; f a -&gt; f b
-</code>
+首先看看函子的类型类用代码怎么表示：
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="c1">-- Haskell中一个函数如果有两个参数一个返回值，写法是这样: a(第一个参数) -&gt; b(第二个参数) -&gt; c(返回值)</span>
+</span><span class='line'><span class="kr">class</span> <span class="kt">Functor</span> <span class="n">f</span> <span class="kr">where</span>
+</span><span class='line'>  <span class="n">fmap</span> <span class="ow">::</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">b</span>
+</span></code></pre></td></tr></table></div></figure>
 函子的类型类只定义了一个fmap函数: fmap函数接收两个参数，第一个参数是以a为参数，b为返回值的函数；第二个参数类型为f a，fmap的返回值类型为f b.
 注意这里的a, b可以为任意类型, f为接收一个类型参数的类型构造器。这样说可能有点抽象，来看一个具体的例子。
 已知[]（列表）是一个functor实例，他的fmap函数声明为:
-<code>haskell
-fmap :: (a -&gt; b) -&gt; [a] -&gt; [b]
-</code>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">fmap</span> <span class="ow">::</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="n">b</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
 接收一个以a为参数，b为返回值的函数以及元素类型为a的列表，返回元素类型为b的列表。
 至此，你能看出functor所抽象的行为吗？你可以从下面两个角度思考fmap:
 1. 接受函数和函子值，返回在函子值上映射函数的结果（返回也是函子值）。
-2. 接受函数，把该函数从操作普通类型的函数<strong>提升</strong>(lift)为操作函子值的函数。
-这就是函子，不难吧？</p>
+2. 接受函数，把该函数从操作普通类型的函数**提升**(lift)为操作函子值的函数。
+这就是函子，不难吧？
 
-<h3>2. Applicative</h3>
-
-<p>Applicative，俗称加强版函子，先来看Applicative类型类的代码:
-<code>haskell
-class (Functor f) =&gt; Applicative f where
-  pure :: a -&gt; f a
-  (&lt;*&gt;) :: f (a -&gt; b) -&gt; f a -&gt; f b
-</code>
+### 2. Applicative
+Applicative，俗称加强版函子，先来看Applicative类型类的代码:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="kr">class</span> <span class="p">(</span><span class="kt">Functor</span> <span class="n">f</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Applicative</span> <span class="n">f</span> <span class="kr">where</span>
+</span><span class='line'>  <span class="n">pure</span> <span class="ow">::</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">a</span>
+</span><span class='line'>  <span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)</span> <span class="ow">::</span> <span class="n">f</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">f</span> <span class="n">b</span>
+</span></code></pre></td></tr></table></div></figure>
 多了一个新的元素，先解释下。
-<code>class (Functor f) =&gt; Applicative f</code>的意思是约束f类型必须首先是一个Functor(函子)，即如果一个类型是Applicative的实例，
-则肯定是Functor的实例。Applicative类型类定义了两个函数：pure和<code>&lt;*&gt;</code>(其实还有一个fmap，
+`class (Functor f) => Applicative f`的意思是约束f类型必须首先是一个Functor(函子)，即如果一个类型是Applicative的实例，
+则肯定是Functor的实例。Applicative类型类定义了两个函数：pure和`<*>`(其实还有一个fmap，
 因为Applicative实例肯定是Functor的实例，所以fmap免费提供了)。pure是一个很简单的函数，接收任意类型的值为参数，返回包裹了该值的Applicative值。
-<code>&lt;*&gt;</code>函数看起来和fmap有些像，唯一的区别是fmap的第一个参数接收一个普通函数(a -> b)，而<code>&lt;*&gt;</code>的第一个参数为f(a -> b)，
+`<*>`函数看起来和fmap有些像，唯一的区别是fmap的第一个参数接收一个普通函数(a -> b)，而`<*>`的第一个参数为f(a -> b)，
 即把普通的函数用Applicative包裹。我们看看列表作为Applicative实例的实现:
-<code>haskell
--- Haskell中，列表的写法为[], 例如[1,2,3]是一个元素都为Int的列表
-pure x = [x]
-(&lt;*&gt;) fs xs = [f x | f &lt;- fs, x &lt;- xs]
-</code>
-pure的实现很简单，把接收的参数值放入列表并返回。<code>&lt;*&gt;</code>的实现稍微复杂点，使用了列表生成式的语法。如果你接触过Python，对这种语法不会陌生，
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="c1">-- Haskell中，列表的写法为[], 例如[1,2,3]是一个元素都为Int的列表</span>
+</span><span class='line'><span class="nf">pure</span> <span class="n">x</span> <span class="ow">=</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
+</span><span class='line'><span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)</span> <span class="n">fs</span> <span class="n">xs</span> <span class="ow">=</span> <span class="p">[</span><span class="n">f</span> <span class="n">x</span> <span class="o">|</span> <span class="n">f</span> <span class="ow">&lt;-</span> <span class="n">fs</span><span class="p">,</span> <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">xs</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
+pure的实现很简单，把接收的参数值放入列表并返回。`<*>`的实现稍微复杂点，使用了列表生成式的语法。如果你接触过Python，对这种语法不会陌生，
 这段代码如果用命令式语言风格翻译，会是这样:
-<code>javascript
-var array = [];
-for(f in fs) {
-  for(x in xs) {
-    array.push(f(x));
-  }
-}
-</code>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">array</span> <span class="o">=</span> <span class="p">[];</span>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="nx">f</span> <span class="k">in</span> <span class="nx">fs</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">for</span><span class="p">(</span><span class="nx">x</span> <span class="k">in</span> <span class="nx">xs</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">array</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">f</span><span class="p">(</span><span class="nx">x</span><span class="p">));</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 到此为止，我们应该已经了解Applicative实例的作用了，主要定义了两个行为，第一个行为是接收一个任意值为参数，返回一个函子值，
 第二个行为是从一个函子值里取出函数，应用到第二个函子里面的值。那么Applicative有什么实际用处呢，看下面的应用：
-<code>haskell
-[(*0), (+100), (+200)] &lt;*&gt; [1, 2, 3]
--- 输出结果: 0,0,0,101,102,103,201,202,203
-</code>
-<code>(*0)</code>是对<code>*</code>函数的部分应用，<code>*</code>是一个二元函数，接收两个参数，返回这两个参数的乘积。<code>(*0)</code>是一个一元函数，接收一个参数，
-返回这个参数与0的乘积。第一个列表里面是三个一元函数，分别应用到第二个列表的元素，参照我们之前对列表<code>&lt;*&gt;</code>函数的定义，很容易得出上面的结果。
-这种把<code>&lt;*&gt;</code>串起来用的用法叫做Applicative风格，下面是另外几个例子：
-<code>haskell
-[(+), (*)] &lt;*&gt; [1, 2] &lt;*&gt; [3, 4]
--- 输出结果: [4,5,5,6,3,4,6,8]
-pure (+) &lt;*&gt; [1, 2] &lt;*&gt; [3, 4]
--- 输出结果: [4,5,5,6]
-</code>
-非常好，现在我们能够把应用到普通值的函数应用到函子值上面了。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="p">[(</span><span class="o">*</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">+</span><span class="mi">100</span><span class="p">),</span> <span class="p">(</span><span class="o">+</span><span class="mi">200</span><span class="p">)]</span> <span class="o">&lt;*&gt;</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+</span><span class='line'><span class="c1">-- 输出结果: 0,0,0,101,102,103,201,202,203</span>
+</span></code></pre></td></tr></table></div></figure>
+`(*0)`是对`*`函数的部分应用，`*`是一个二元函数，接收两个参数，返回这两个参数的乘积。`(*0)`是一个一元函数，接收一个参数，
+返回这个参数与0的乘积。第一个列表里面是三个一元函数，分别应用到第二个列表的元素，参照我们之前对列表`<*>`函数的定义，很容易得出上面的结果。
+这种把`<*>`串起来用的用法叫做Applicative风格，下面是另外几个例子：
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="p">[(</span><span class="o">+</span><span class="p">),</span> <span class="p">(</span><span class="o">*</span><span class="p">)]</span> <span class="o">&lt;*&gt;</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&lt;*&gt;</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+</span><span class='line'><span class="c1">-- 输出结果: [4,5,5,6,3,4,6,8]</span>
+</span><span class='line'><span class="nf">pure</span> <span class="p">(</span><span class="o">+</span><span class="p">)</span> <span class="o">&lt;*&gt;</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&lt;*&gt;</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+</span><span class='line'><span class="c1">-- 输出结果: [4,5,5,6]</span>
+</span></code></pre></td></tr></table></div></figure>
+非常好，现在我们能够把应用到普通值的函数应用到函子值上面了。
 
-<h3>3. Monad</h3>
-
-<p>相比Functor和Applicative，Monad的应用更加广泛，Monad可以看作加强版的Applicative，引用&lt;&lt;Haskell趣学指南>>中的句子：
-<code>
-monad是对applicative函子概念的延伸，它们提供了下面这个问题的一种解决方案：如果我们有一个带有上下文的值m a，如何对它应用这样一个函数——取
-类型为a的参数，返回带上下文的值？换句话说，怎么对m a应用类型为a -&gt; m b的函数？
-</code>
+### 3. Monad
+相比Functor和Applicative，Monad的应用更加广泛，Monad可以看作加强版的Applicative，引用<<Haskell趣学指南>>中的句子：
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">monad是对applicative函子概念的延伸</span><span class="err">，它们提供了下面这个问题的一种解决方案：如果我们有一个带有上下文的值</span><span class="n">m</span> <span class="n">a</span><span class="err">，如何对它应用这样一个函数——取</span>
+</span><span class='line'><span class="err">类型为</span><span class="n">a的参数</span><span class="err">，返回带上下文的值？换句话说，怎么对</span><span class="n">m</span> <span class="n">a应用类型为a</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">b的函数</span><span class="err">？</span>
+</span></code></pre></td></tr></table></div></figure>
 这种场景非常常见，我们来看Java8的Stream API:
-<code>java
-public interface Stream&lt;T&gt; extends BaseStream&lt;T, Stream&lt;T&gt;&gt; {
-  //...
-  &lt;R&gt; Stream&lt;R&gt; flatMap(Function&lt;? super T, ? extends Stream&lt;? extends R&gt;&gt; mapper);
-  //...
-}
-</code>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Stream</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="kd">extends</span> <span class="n">BaseStream</span><span class="o">&lt;</span><span class="n">T</span><span class="o">,</span> <span class="n">Stream</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//...</span>
+</span><span class='line'>  <span class="o">&lt;</span><span class="n">R</span><span class="o">&gt;</span> <span class="n">Stream</span><span class="o">&lt;</span><span class="n">R</span><span class="o">&gt;</span> <span class="nf">flatMap</span><span class="o">(</span><span class="n">Function</span><span class="o">&lt;?</span> <span class="kd">super</span> <span class="n">T</span><span class="o">,</span> <span class="o">?</span> <span class="kd">extends</span> <span class="n">Stream</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="n">R</span><span class="o">&gt;&gt;</span> <span class="n">mapper</span><span class="o">);</span>
+</span><span class='line'>  <span class="c1">//...</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
 flatMap方法接收一个函数（这个函数接收T类型的入参，返回Stream<R>）然后在Stream<T>上应用这个函数，返回Stream<R>(暂时不考虑子类问题)。
 我们来看看Haskell中的"flatMap"（Haskell中叫做绑定）:
-<code>haskell
-(&gt;&gt;=) :: (Monad m) =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
-</code>
-<code>&gt;&gt;=</code>函数接收两个参数：一个Monad值m a，一个函数（入参为类型a，返回值为Monad值m b），返回值类型为Monad值m b。
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">Monad</span> <span class="n">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">b</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="n">b</span>
+</span></code></pre></td></tr></table></div></figure>
+`>>=`函数接收两个参数：一个Monad值m a，一个函数（入参为类型a，返回值为Monad值m b），返回值类型为Monad值m b。
 这和Java8的flatMap形式上非常相似，其实它们要解决的是相同的问题。
 Monad在函数式编程中无处不在，来看看具体的例子。
-<code>haskell
-[3,4,5] &gt;&gt;= \x -&gt; [-x]
--- 输出结果: [-3,-4,-5]
-</code>
-首先，列表是一个Monad，对照<code>&gt;&gt;=</code>函数的定义，这里的m就是列表，a就是Int，a -> m b对应的类型就是Int -> [Int]。
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span> <span class="o">&gt;&gt;=</span> <span class="nf">\</span><span class="n">x</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span><span class="p">]</span>
+</span><span class='line'><span class="c1">-- 输出结果: [-3,-4,-5]</span>
+</span></code></pre></td></tr></table></div></figure>
+首先，列表是一个Monad，对照`>>=`函数的定义，这里的m就是列表，a就是Int，a -> m b对应的类型就是Int -> [Int]。
 上面的逻辑用Java8的flatMap实现：
-<code>java
-//Lists来自Guava库
-Lists.newArrayList(3,4,5).stream().flatMap(x -&gt; Lists.newArrayList(-x).stream()).collect(Collectors.toList());
-</code></p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//Lists来自Guava库</span>
+</span><span class='line'><span class="n">Lists</span><span class="o">.</span><span class="na">newArrayList</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span><span class="mi">4</span><span class="o">,</span><span class="mi">5</span><span class="o">).</span><span class="na">stream</span><span class="o">().</span><span class="na">flatMap</span><span class="o">(</span><span class="n">x</span> <span class="o">-&gt;</span> <span class="n">Lists</span><span class="o">.</span><span class="na">newArrayList</span><span class="o">(-</span><span class="n">x</span><span class="o">).</span><span class="na">stream</span><span class="o">()).</span><span class="na">collect</span><span class="o">(</span><span class="n">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>好了，这里我简单介绍了Functor，Applicative，Monad的概念以及实际应用。如果对这些概念想更进一步了解，可以看看下面的书：<br/>
-1. <a href="http://book.douban.com/subject/25803388/">Haskell趣学指南</a><br/>
-2. <a href="http://book.douban.com/subject/20488750/">Functional Programming in Scala</a><br/>
-3. <a href="http://book.douban.com/subject/1894611/">范畴论</a></p>
+好了，这里我简单介绍了Functor，Applicative，Monad的概念以及实际应用。如果对这些概念想更进一步了解，可以看看下面的书：  
+1. [Haskell趣学指南](http://book.douban.com/subject/25803388/)  
+2. [Functional Programming in Scala](http://book.douban.com/subject/20488750/)  
+3. [范畴论](http://book.douban.com/subject/1894611/)  
 ]]></content>
   </entry>
   
