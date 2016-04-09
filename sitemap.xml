@@ -31,40 +31,13 @@
     <loc>http://skaka.me/</loc>
   </url>
   <url>
-    <loc>http://skaka.me/blog/categories/statsd/</loc>
-  </url>
-  <url>
-    <loc>http://skaka.me/blog/categories/graphite/</loc>
-  </url>
-  <url>
-    <loc>http://skaka.me/blog/categories/grafana/</loc>
-  </url>
-  <url>
-    <loc>http://skaka.me/blog/categories/kamon/</loc>
-  </url>
-  <url>
     <loc>http://skaka.me/blog/categories/play-framework/</loc>
-  </url>
-  <url>
-    <loc>http://skaka.me/blog/categories/java/</loc>
-  </url>
-  <url>
-    <loc>http://skaka.me/blog/categories/scala/</loc>
-  </url>
-  <url>
-    <loc>http://skaka.me/blog/categories/sbt/</loc>
   </url>
   <url>
     <loc>http://skaka.me/blog/categories/han-shu-shi-bian-cheng/</loc>
   </url>
   <url>
-    <loc>http://skaka.me/blog/categories/haskell/</loc>
-  </url>
-  <url>
     <loc>http://skaka.me/blog/categories/wei-fu-wu/</loc>
-  </url>
-  <url>
-    <loc>http://skaka.me/blog/categories/fen-bu-shi/</loc>
   </url>
   <url>
     <loc>http://skaka.me/blog/categories/finagle/</loc>
