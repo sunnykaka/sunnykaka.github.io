@@ -9,9 +9,9 @@
   <meta name="author" content="skaka">
 
   
-  <meta name="description" content="微服务架构可能是时下最热的一种架构模式了. 这篇系列里, 我想介绍一些常用的微服务框架. 通过学习这些框架,
-我们将会了解实现微服务的过程中会遇到哪些问题, 以及这些微服务框架是如何帮助我们解决这些问题的.
-所以这是一篇关于微服务实践的系列, 我不会讨论太多概念性的东西. &hellip;">
+  <meta name="description" content="不同于单一架构应用(Monolith), 分布式环境下, 进行事务操作将变得困难, 因为分布式环境通常会有多个数据源,
+只用本地数据库事务难以保证多个数据源数据的一致性.
+这种情况下, 可以使用两阶段或者三阶段提交协议来完成分布式事务.但是使用这种方式一般来说性能较差, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -100,6 +100,71 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/04/21/springcloud1/">微服务框架Spring Cloud介绍 Part1: 使用事件和消息队列实现分布式事务</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-04-21T11:21:45+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2016</span></span> <span class='time'>11:21 am</span></time>
+        
+        
+         | <a href="/blog/2016/04/21/springcloud1/#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>不同于单一架构应用(Monolith), 分布式环境下, 进行事务操作将变得困难, 因为分布式环境通常会有多个数据源,
+只用本地数据库事务难以保证多个数据源数据的一致性.
+这种情况下, 可以使用两阶段或者三阶段提交协议来完成分布式事务.但是使用这种方式一般来说性能较差,
+因为事务管理器需要在多个数据源之间进行多次等待.
+有一种方法同样可以解决分布式事务问题, 并且性能较好, 这就是我这篇文章要介绍的使用事件,本地事务以及消息队列来实现分布式事务.</p>
+
+<p>我们从一个简单的实例入手. 基本所有互联网应用都会有用户注册的功能. 在这个例子中, 我们对于用户注册有两步操作: <br/>
+1. 注册成功, 保存用户信息.<br/>
+2. 需要给用户发放一张代金券, 目的是鼓励用户进行消费.<br/>
+如果是一个单一架构应用, 实现这个功能非常简单: 在一个本地事务里, 往用户表插一条记录, 并且在代金券表里插一条记录, 提交事务就完成了.
+但是如果我们的应用是用微服务实现的, 可能用户和代金券是两个独立的服务, 他们有各自的应用和数据库,
+那么就没有办法简单的使用本地事务来保证操作的原子性了.
+现在来看看如何使用事件机制和消息队列来实现这个需求.(我在这里使用的消息队列是kafka, 原理同样适用于ActiveMQ/RabbitMQ等其他队列)</p>
+
+<p>我们会为用户注册这个操作创建一个事件, 该事件就叫做用户创建事件(USER_CREATED). 用户服务成功保存用户记录后, 会发送用户创建事件到消息队列,
+代金券服务会监听用户创建事件, 一旦接收到该事件, 代金券服务就会在自己的数据库中为该用户创建一张代金券.
+好了, 这些步骤看起来都相当的简单直观, 但是怎么保证事务的原子性呢? 考虑下面这两个场景:<br/>
+1. 用户服务在保存用户记录, 还没来得及向消息队列发送消息之前就宕机了. 怎么保证用户创建事件一定发送到消息队列了?<br/>
+2. 代金券服务接收到用户创建事件, 还没来得及处理事件就宕机了. 重新启动之后如何消费之前的用户创建事件?<br/>
+这两个问题的本质是: 如何让操作数据库和操作消息队列这两个操作成为一个原子操作.
+不考虑2PC, 这里我们可以通过事件表来解决这个问题. 下面是类图.
+<img src="/images/custom/20160421/event_class.png"></p>
+
+<p>EventPublish是记录待发布事件的表. 其中:<br/>
+id: 每个事件在创建的时候都会生成一个全局唯一ID, 例如UUID.<br/>
+status: 事件状态, 枚举类型. 现在只有两个状态: 待发布(NEW), 已发布(PUBLISHED).<br/>
+payload: 事件内容. 这里我们会将事件内容转成json存到这个字段里.<br/>
+eventType: 事件类型, 枚举类型. 每个事件都会有一个类型, 比如我们之前提到的创建用户USER_CREATED就是一个事件类型.<br/>
+EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016/04/21/springcloud1/">继续阅读 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -347,58 +412,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/07/27/play1/">给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-27T16:46:32+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:46 pm</span></time>
-        
-        
-         | <a href="/blog/2015/07/27/play1/#comments">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>1. 关于这篇系列</h3>
-
-<p>这篇系列不是Play框架的Hello World，因为这样的文章网上已经有很多。</p>
-
-<p>这篇系列会首先结合实际代码介绍Play的特点以及适用场景，然后会有几篇文章介绍Play与Spring，JPA（Hibernate）的集成，以及一些Play应用的最佳实践，
-这期间会在Github上提供一个脚手架项目，方便感兴趣的朋友直接动手尝试。最后会简单分析Play的部分源码，帮助大家理解黑盒子的内部机制。</p>
-
-<p>我水平有限，有错误欢迎指出。</p>
-
-<h3>2. Play介绍</h3>
-
-<p>Play Framework是一个开源的Web框架，背后商业公司是Typesafe。要介绍Play之前，首先理清Play的两个不同的分支。
-Play 1.x 使用Java开发，最新版本是1.3.1，只支持Java项目。从11年开始就进入了维护阶段，新项目一般不考虑使用Play1。
-Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
-这里主要介绍最新的Play2.4 for Java。有一点需要提前说明，虽然Play2主要由Scala开发，但是对于项目中的一般开发人员而言，
-使用Play可以完全不懂Scala，具体情况后面会说明。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015/07/27/play1/">继续阅读 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -412,6 +425,10 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
     <section>
   <h1>最新文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/04/21/springcloud1/">微服务框架Spring Cloud介绍 Part1: 使用事件和消息队列实现分布式事务</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2016/03/19/finagle1/">微服务框架Finagle介绍 Part1: Future, Service, Filter</a>
@@ -444,8 +461,10 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
 	<ul id="categories">
 		<li class='category'><a href='/blog/categories/finagle/'>finagle (1)</a></li>
 <li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
+<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (1)</a></li>
 <li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
-<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (1)</a></li>
+<li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (2)</a></li>
 
 	</ul>
 </section>
