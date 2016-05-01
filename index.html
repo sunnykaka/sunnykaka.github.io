@@ -9,9 +9,9 @@
   <meta name="author" content="skaka">
 
   
-  <meta name="description" content="不同于单一架构应用(Monolith), 分布式环境下, 进行事务操作将变得困难, 因为分布式环境通常会有多个数据源,
-只用本地数据库事务难以保证多个数据源数据的一致性.
-这种情况下, 可以使用两阶段或者三阶段提交协议来完成分布式事务.但是使用这种方式一般来说性能较差, &hellip;">
+  <meta name="description" content="在上篇文章中我介绍了Finagle中的Future/Service/Filter.
+这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
+这两篇文章对应的源代码地址在Github上. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -100,6 +100,95 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/05/01/finagle2/">微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-05-01T10:17:35+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2016</span></span> <span class='time'>10:17 am</span></time>
+        
+        
+         | <a href="/blog/2016/05/01/finagle2/#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在<a href="http://skaka.me/blog/2016/03/19/finagle1/">上篇文章</a>中我介绍了Finagle中的Future/Service/Filter.
+这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
+这两篇文章对应的源代码地址在<a href="https://github.com/sunnykaka/java-finagle-example">Github</a>上.
+代码中有Java和Scala版本两套版本的实现, 但是这里我们只会介绍Java版本.</p>
+
+<p>首先来看echo应用的Server端代码, 打开<code>java-finagle-example/src/main/java/com/akkafun/finagle/Server.java</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Server</span> <span class="kd">extends</span> <span class="n">Service</span><span class="o">&lt;</span><span class="n">Request</span><span class="o">,</span> <span class="n">Response</span><span class="o">&gt;</span> <span class="o">{</span>                             <span class="c1">//1</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span> <span class="nf">apply</span><span class="o">(</span><span class="n">Request</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>                                 <span class="c1">//2</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;request: &quot;</span> <span class="o">+</span> <span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">Response</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">Version</span><span class="o">.</span><span class="na">Http11$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="n">Status</span><span class="o">.</span><span class="na">Ok</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setContentString</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Future</span><span class="o">.</span><span class="na">value</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Server</span> <span class="n">service</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Server</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ListeningServer</span> <span class="n">server</span> <span class="o">=</span> <span class="n">Http</span><span class="o">.</span><span class="na">server</span><span class="o">().</span>                                      <span class="c1">//3</span>
+</span><span class='line'>                <span class="n">withLabel</span><span class="o">(</span><span class="s">&quot;echo-server&quot;</span><span class="o">).</span>
+</span><span class='line'>                <span class="n">withTracer</span><span class="o">(</span><span class="n">ZipkinTracer</span><span class="o">.</span><span class="na">mk</span><span class="o">(</span><span class="s">&quot;192.168.99.100&quot;</span><span class="o">,</span>
+</span><span class='line'>                    <span class="mi">9410</span><span class="o">,</span> <span class="n">DefaultStatsReceiver$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="mf">1.0f</span><span class="o">)).</span>
+</span><span class='line'>                <span class="n">serve</span><span class="o">(</span><span class="k">new</span> <span class="nf">InetSocketAddress</span><span class="o">(</span><span class="mi">8081</span><span class="o">),</span> <span class="n">service</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">result</span><span class="o">(</span><span class="n">server</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016/05/01/finagle2/">继续阅读 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -361,57 +450,6 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/08/17/play2/">给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-08-17T20:19:50+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:19 pm</span></time>
-        
-        
-         | <a href="/blog/2015/08/17/play2/#comments">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>1. 介绍</h3>
-
-<p>这篇文章会使用Play，Spring，JPA（hibernate）开发一个简单的CRUD功能，主要是为了介绍如何使用Play进行开发。</p>
-
-<h3>2. 界面截图</h3>
-
-<p><img src="/images/custom/20150818/play2_1.png">
-<img src="/images/custom/20150818/play2_2.png">
-很简单的新增和查询功能。我们来看看代码如何实现。</p>
-
-<h3>3. 代码实现</h3>
-
-<h4>1. Model</h4>
-
-<p>代码架构使用典型的MVC，分层为Controller-Service-Dao-Model。首先来看Model。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015/08/17/play2/">继续阅读 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -425,6 +463,10 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
     <section>
   <h1>最新文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/05/01/finagle2/">微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2016/04/21/springcloud1/">微服务框架Spring Cloud介绍 Part1: 使用事件和消息队列实现分布式事务</a>
@@ -459,12 +501,12 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
 <section>
 	<h1>Categories</h1>
 	<ul id="categories">
-		<li class='category'><a href='/blog/categories/finagle/'>finagle (1)</a></li>
+		<li class='category'><a href='/blog/categories/finagle/'>finagle (2)</a></li>
 <li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
 <li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (1)</a></li>
 <li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
 <li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
-<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (2)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (3)</a></li>
 
 	</ul>
 </section>

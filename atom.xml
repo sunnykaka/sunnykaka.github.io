@@ -4,7 +4,7 @@
   <title><![CDATA[skaka的博客]]></title>
   <link href="http://skaka.me/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-04-21T22:36:27+08:00</updated>
+  <updated>2016-05-01T12:53:34+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -12,6 +12,235 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用]]></title>
+    <link href="http://skaka.me/blog/2016/05/01/finagle2/"/>
+    <updated>2016-05-01T10:17:35+08:00</updated>
+    <id>http://skaka.me/blog/2016/05/01/finagle2</id>
+    <content type="html"><![CDATA[<p>在<a href="http://skaka.me/blog/2016/03/19/finagle1/">上篇文章</a>中我介绍了Finagle中的Future/Service/Filter.
+这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
+这两篇文章对应的源代码地址在<a href="https://github.com/sunnykaka/java-finagle-example">Github</a>上.
+代码中有Java和Scala版本两套版本的实现, 但是这里我们只会介绍Java版本.</p>
+
+<p>首先来看echo应用的Server端代码, 打开<code>java-finagle-example/src/main/java/com/akkafun/finagle/Server.java</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Server</span> <span class="kd">extends</span> <span class="n">Service</span><span class="o">&lt;</span><span class="n">Request</span><span class="o">,</span> <span class="n">Response</span><span class="o">&gt;</span> <span class="o">{</span>                             <span class="c1">//1</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span> <span class="nf">apply</span><span class="o">(</span><span class="n">Request</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>                                 <span class="c1">//2</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;request: &quot;</span> <span class="o">+</span> <span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">Response</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">Version</span><span class="o">.</span><span class="na">Http11$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="n">Status</span><span class="o">.</span><span class="na">Ok</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setContentString</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Future</span><span class="o">.</span><span class="na">value</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Server</span> <span class="n">service</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Server</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ListeningServer</span> <span class="n">server</span> <span class="o">=</span> <span class="n">Http</span><span class="o">.</span><span class="na">server</span><span class="o">().</span>                                      <span class="c1">//3</span>
+</span><span class='line'>                <span class="n">withLabel</span><span class="o">(</span><span class="s">&quot;echo-server&quot;</span><span class="o">).</span>
+</span><span class='line'>                <span class="n">withTracer</span><span class="o">(</span><span class="n">ZipkinTracer</span><span class="o">.</span><span class="na">mk</span><span class="o">(</span><span class="s">&quot;192.168.99.100&quot;</span><span class="o">,</span>
+</span><span class='line'>                    <span class="mi">9410</span><span class="o">,</span> <span class="n">DefaultStatsReceiver$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="mf">1.0f</span><span class="o">)).</span>
+</span><span class='line'>                <span class="n">serve</span><span class="o">(</span><span class="k">new</span> <span class="nf">InetSocketAddress</span><span class="o">(</span><span class="mi">8081</span><span class="o">),</span> <span class="n">service</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">result</span><span class="o">(</span><span class="n">server</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<!--more-->
+
+
+<ol>
+<li><p>在Finagle中, 实现一个RPC服务非常简单. 只需要继承Service抽象类, 实现它的apply方法.
+Service抽象类有两个类型参数, 第一个类型参数代表的是请求对象, 第二个类型参数代表的是返回对象.
+这两个对象的具体类型与Service实现类使用的具体协议有关.
+例如我们在echo服务中使用Http协议, 对应的Request类就是<code>com.twitter.finagle.http.Request</code>,
+对应的Response类是<code>com.twitter.finagle.http.Response</code>.
+如果是thrift协议, 则这两个类型参数在Service实现类中都是<code>scala.Array&lt;scala.Byte&gt;</code>(Array和Byte都是scala中的类, 对应Java中的数组与byte).</p></li>
+<li><p>apply方法中, 我们首先使用Response的工厂方法构造一个Response对象. 然后将Request中的请求内容原封不动的设置到Response中,
+再将Response设置到Future中返回. 需要最后一步的原因是apply方法的返回值类型是<code>Future&lt;Response&gt;</code>, 但是我们在这个方法中不需要进行异步操作,
+所以可以直接使用<code>Future.value(response)</code>将对象包装成Future返回.
+另外, 细心的你应该发现了一行比较碍眼的代码: <code>Response.apply(Version.Http11$.MODULE$, Status.Ok())</code>, 其中Version的用法很古怪.
+这是Java调用Scala伴生对象的副作用, Scala有一些语法和特性在Java中没有对应的概念, 这种情况下Java调用Scala的代码就会比较晦涩.</p></li>
+<li><p>为了启动Service实例, 我们需要构造一个<code>com.twitter.finagle.ListeningServer</code>. <code>withLabel</code>设置服务名称,
+<code>withTracer</code>设置监控信息, 这个等后面介绍zipkin的时候在解释. 最后指定端口启动服务.</p></li>
+</ol>
+
+
+<p>现在来看echo应用的Client端代码, 打开<code>java-finagle-example/src/main/java/com/akkafun/finagle/Client.java</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="kn">import</span> <span class="nn">static</span> <span class="n">scala</span><span class="o">.</span><span class="na">compat</span><span class="o">.</span><span class="na">java8</span><span class="o">.</span><span class="na">JFunction</span><span class="o">.*;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Client</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">TimeoutException</span><span class="o">,</span> <span class="n">InterruptedException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Service</span><span class="o">&lt;</span><span class="n">Request</span><span class="o">,</span> <span class="n">Response</span><span class="o">&gt;</span> <span class="n">service</span> <span class="o">=</span> <span class="n">Http</span><span class="o">.</span><span class="na">client</span><span class="o">().</span>                             <span class="c1">//1</span>
+</span><span class='line'>                <span class="n">withLabel</span><span class="o">(</span><span class="s">&quot;echo-client&quot;</span><span class="o">).</span>
+</span><span class='line'>                <span class="n">withTracer</span><span class="o">(</span><span class="n">ZipkinTracer</span><span class="o">.</span><span class="na">mk</span><span class="o">(</span><span class="s">&quot;192.168.99.100&quot;</span><span class="o">,</span>
+</span><span class='line'>                    <span class="mi">9410</span><span class="o">,</span> <span class="n">DefaultStatsReceiver$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="mf">1.0f</span><span class="o">)).</span>
+</span><span class='line'>                <span class="n">newService</span><span class="o">(</span><span class="s">&quot;127.0.0.1:8081&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//create a &quot;Greetings!&quot; request.</span>
+</span><span class='line'>        <span class="n">Reader</span> <span class="n">data</span> <span class="o">=</span> <span class="n">Reader$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">.</span><span class="na">fromStream</span><span class="o">(</span>                                       <span class="c1">//2</span>
+</span><span class='line'>            <span class="k">new</span> <span class="nf">ByteArrayInputStream</span><span class="o">(</span><span class="s">&quot;Greetings!&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">StandardCharsets</span><span class="o">.</span><span class="na">UTF_8</span><span class="o">)));</span>
+</span><span class='line'>        <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="n">Request</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">Version</span><span class="o">.</span><span class="na">Http11$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">Method</span><span class="o">.</span><span class="na">Post$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="s">&quot;/&quot;</span><span class="o">,</span> <span class="n">data</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Future</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span> <span class="n">responseFuture</span> <span class="o">=</span> <span class="n">Await</span><span class="o">.</span><span class="na">ready</span><span class="o">(</span><span class="n">service</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">request</span><span class="o">));</span>          <span class="c1">//3</span>
+</span><span class='line'>        <span class="n">responseFuture</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="n">func</span><span class="o">(</span><span class="n">response</span> <span class="o">-&gt;</span> <span class="o">{</span>                                     <span class="c1">//4</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&quot;response status: %s, response string: %s&quot;</span><span class="o">,</span>
+</span><span class='line'>                    <span class="n">response</span><span class="o">.</span><span class="na">status</span><span class="o">().</span><span class="na">toString</span><span class="o">(),</span> <span class="n">response</span><span class="o">.</span><span class="na">contentString</span><span class="o">()));</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}));</span>
+</span><span class='line'>        <span class="n">responseFuture</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">func</span><span class="o">(</span><span class="n">e</span> <span class="o">-&gt;</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;error: &quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}));</span>
+</span><span class='line'>        <span class="n">responseFuture</span><span class="o">.</span><span class="na">ensure</span><span class="o">(</span><span class="n">func</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">service</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>            <span class="c1">//IDE may complain here, just ignore</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li><p>这部分代码和我们之前的Server类代码很像. 在Server类中, 我们创建了一个Service实例并监听了8081端口,
+现在客户端通过newService创建了一个Service的stub.</p></li>
+<li><p>这部分代码用来构造一个消息内容为Greetings的Http请求.</p></li>
+<li><p><code>service.apply(request)</code>就是一次客户端到服务端的RPC调用. 这个调用的返回值是<code>Future&lt;Response&gt;</code>.<br/>
+而<code>service.apply(request)</code>是一个异步操作, 主线程调用这个方法并不会阻塞, 有可能主线程退出了实际调用还没有完成.
+所以这里就要用到<code>Await.ready</code>了. <code>Await.ready</code>的作用是等待一个Future执行完成再返回, 是一个同步操作.
+通过调用<code>Await.ready</code>我们就能将一个异步操作转化成一个同步操作.</p></li>
+<li><p>接下来我们在Future上注册请求成功与失败的回调函数. 请求成功的回调函数中只是简单的打印出响应的消息内容.<br/>
+这里有个细节需要说明一下. Future的onSuccess方法需要传入一个Scala的函数特质: <code>scala.Function1[Response, BoxedUnit]</code>.
+如果是Java6或7, 我们可以这样实现这个特质:</p></li>
+</ol>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="n">responseFuture</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="k">new</span> <span class="n">AbstractFunction1</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">,</span> <span class="n">BoxedUnit</span><span class="o">&gt;(){</span>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">BoxedUnit</span> <span class="nf">apply</span><span class="o">(</span><span class="n">Response</span> <span class="n">response</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&quot;response status: %s, response string: %s&quot;</span><span class="o">,</span>
+</span><span class='line'>                <span class="n">response</span><span class="o">.</span><span class="na">status</span><span class="o">().</span><span class="na">toString</span><span class="o">(),</span> <span class="n">response</span><span class="o">.</span><span class="na">contentString</span><span class="o">()));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在Java8中, 这种匿名类我们一般会使用Lambda代替, 理想情况下写法是这样:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="n">responseFuture</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="n">response</span> <span class="o">-&gt;</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&quot;response status: %s, response string: %s&quot;</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">response</span><span class="o">.</span><span class="na">status</span><span class="o">().</span><span class="na">toString</span><span class="o">(),</span> <span class="n">response</span><span class="o">.</span><span class="na">contentString</span><span class="o">()));</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可惜的是这种写法编译不会通过, 因为只有符合<code>FunctionalInterface</code>定义的接口才能使用Lambda表达式(什么是<code>FunctionalInterface</code>, 请参考<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html">Javadoc</a>), 而在Scala2.11中, <code>scala.Function1</code>不是一个<code>FunctionalInterface</code>(Scala2.12会兼容Java8). 为了在这里使用Lambda, 我们使用了<a href="https://github.com/scala/scala-java8-compat">scala-java8-compat</a>这个库, 调用<code>scala.compat.java8.JFunction.func</code>方法将一个<code>FunctionalInterface</code>转化成<code>scala.Function1</code>.</p>
+
+<p>可以看出, 在Java中调用Finagle的API不是很方便. 所以Finagle适合以Scala为主, Java为辅的项目. 如果项目全是Java,
+则值得为Finagle主要的API写一层Java的适配层, 来屏蔽Java调用Scala代码会出现的一些晦涩代码.</p>
+
+<p>现在我们启动服务端和客户端来看看运行结果.
+首先启动Server类, 然后启动Client. Client运行完毕自动结束, 你应该能在Client的控制台看到如下输出:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="n">response</span> <span class="nl">status:</span> <span class="n">Status</span><span class="o">(</span><span class="mi">200</span><span class="o">),</span> <span class="n">response</span> <span class="nl">string:</span> <span class="n">Greetings</span><span class="o">!</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Server控制台的输出:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="nl">request:</span> <span class="n">Greetings</span><span class="o">!</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Http协议比较适合用于对外提供服务, 并且一般会使用REST. 在Finagle中使用REST可以使用<a href="https://github.com/finagle/finch">Finch</a>库.
+这个库轻量小巧, API简单, 提供了一套很方便的对Http消息进行操作的DSL.
+如果是内网服务调用, 一般推荐使用结构紧凑, 传输效率高的协议. 比如protocol buffer, thrift或Avro.
+Finagle对thrift有很好的支持, 下篇文章我将介绍在Finagle中如何开发thrift应用.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[微服务框架Spring Cloud介绍 Part1: 使用事件和消息队列实现分布式事务]]></title>
