@@ -9,7 +9,12 @@
   <meta name="author" content="skaka">
 
   
-  <meta name="description" content="1. 介绍 这篇文章会使用Play，Spring，JPA（hibernate）开发一个简单的CRUD功能，主要是为了介绍如何使用Play进行开发。 2. 界面截图 很简单的新增和查询功能。我们来看看代码如何实现。 3. 代码实现 1. Model 代码架构使用典型的MVC， &hellip;">
+  <meta name="description" content="1. 开始前的准备 这篇文章会介绍Play项目开发环境的搭建，以及日常开发的常用命令。进行之前，首先得准备下面的工具： 1.JDK8+
+2.Scala 2.11.6+
+3.sbt 0.13.7+
+4.IntelliJ IDEA 14+
+5.MySQL 5.5+ 或 MariaDB 10+
+6. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -98,6 +103,66 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/09/13/play3/">给Java开发者的Play Framework(2.4)介绍 Part3：搭建Play的开发环境</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-09-13T10:22:10+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>10:22 am</span></time>
+        
+        
+         | <a href="/blog/2015/09/13/play3/#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>1. 开始前的准备</h3>
+
+<p>这篇文章会介绍Play项目开发环境的搭建，以及日常开发的常用命令。进行之前，首先得准备下面的工具：</p>
+
+<p>1.JDK8+<br/>
+2.<a href="http://www.scala-lang.org/">Scala 2.11.6+</a><br/>
+3.<a href="http://www.scala-sbt.org/">sbt 0.13.7+</a><br/>
+4.<a href="https://www.jetbrains.com/idea/">IntelliJ IDEA 14+</a><br/>
+5.<a href="http://www.mysql.com/">MySQL 5.5+</a> 或 <a href="https://mariadb.org/">MariaDB 10+</a><br/>
+6.<a href="http://redis.io/">Redis 2.7+</a><br/>
+7.科学上网工具</p>
+
+<p>这些软件安装都可以参照官方的文档，这里就不介绍了。</p>
+
+<p>推荐使用的IDE是IntelliJ IDEA，如果对Eclipse有执念的也可以考虑用Typesafe维护的<a href="http://scala-ide.org/">ScalaIDE</a>。<br/>
+但是在目前看来，IDEA对Scala的支持最好，另外IDEA相比Eclipse也有很多优点，没有尝试过的朋友可以试一下，保证你不会想切回Eclipse了：）</p>
+
+<p>MySQL和Redis是这篇文章的demo项目启动需要的，如果不打算运行项目可以忽略。</p>
+
+<p>另外科学上网工具也是需要的, demo项目的一些包需要连接Google Code仓库获取，而且没有科学上网的话下载速度会奇慢无比，相信我，你没有那么多时间用来浪费的。</p>
+
+<h3>2. 搭建开发环境</h3>
+
+<p>我的操作系统是Ubuntu 14.04，所以下面涉及到命令或文件路径地方，可能都是Linux风格的。如果你的操作系统是Windows或OS X，需要做相应替换。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015/09/13/play3/">继续阅读 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -266,6 +331,10 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/05/02/finagle3/">微服务框架Finagle介绍 Part3: 在Finagle中开发基于Thrift协议的应用</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/05/01/finagle2/">微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用</a>
       </li>
     
@@ -302,12 +371,12 @@ Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
 <section>
 	<h1>Categories</h1>
 	<ul id="categories">
-		<li class='category'><a href='/blog/categories/finagle/'>finagle (2)</a></li>
+		<li class='category'><a href='/blog/categories/finagle/'>finagle (3)</a></li>
 <li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
 <li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (1)</a></li>
 <li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
 <li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
-<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (3)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (4)</a></li>
 
 	</ul>
 </section>

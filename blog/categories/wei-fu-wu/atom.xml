@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 微服务 | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/wei-fu-wu/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-05-01T12:53:34+08:00</updated>
+  <updated>2016-05-08T01:06:39+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -14,14 +14,230 @@
 
   
   <entry>
+    <title type="html"><![CDATA[微服务框架Finagle介绍 Part3: 在Finagle中开发基于Thrift协议的应用]]></title>
+    <link href="http://skaka.me/blog/2016/05/02/finagle3/"/>
+    <updated>2016-05-02T21:32:55+08:00</updated>
+    <id>http://skaka.me/blog/2016/05/02/finagle3</id>
+    <content type="html"><![CDATA[在[上篇文章](http://skaka.me/blog/2016/05/01/finagle2/)中我们开发了一个基于Http协议的echo服务端和客户端.
+这篇文章我们将开发一个基于Thrift协议的客户端和服务端.
+这两篇文章对应的源代码地址在[Github](https://github.com/sunnykaka/java-finagle-example).
+代码中有Java和Scala版本两套版本的实现, 但是这里我只会介绍Java版本.  
+
+[Thrift](http://thrift.apache.org/)最早由Facebook开源, 后被Apache收录成为顶级项目. Thrift严格来说不只是一种协议,
+而是一个RPC框架. 使用Thrift, 我们只需要定义好使用的类型和接口声明, Thrift的代码生成工具能够自动为我们生成客户端和服务端代码.
+我们现在来看如何在Finagle中使用Thrift.  
+
+首先定义一个Thrift的IDL文件, 文件位置在`java-finagle-example/src/main/thrift/DemoService.thrift`:
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>namespace java com.akkafun.service.thrift
+</span><span class='line'>
+</span><span class='line'>service DemoService {
+</span><span class='line'>  string method1();
+</span><span class='line'>
+</span><span class='line'>  i32 method2(1: i32 a, 2: i32 b);
+</span><span class='line'>
+</span><span class='line'>  void method3();
+</span><span class='line'>
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+定义了一个DemoService服务, 这个服务有三个示例方法. `namespace`的语法是为接口定义一个命名空间(对应Java里的包).
+method1没有参数, 方法的返回值类型是字符串. method2有两个参数, a和b, 参数和返回值类型都是int32类型.
+method3无参数, 无返回值.  
+<!--more-->
+现在我们来生成代码. Twitter提供了一个开源的工具[Scrooge](https://github.com/twitter/scrooge)用来生成Finagle + Thrift的代码.
+我们使用Scrooge提供的maven插件用来生成代码. 这个插件的配置可以查看`pom.xml`, 这里不做介绍.
+运行maven命令: `mvn clean compile`, 生成的代码在`java-finagle-example/target/classes/thrift`目录下.
+这里我们生成的是Scala代码. 虽然Scrooge提供Java代码的生成, 但是实际使用存在bug.
+我们需要将这些代码手动拷贝到源代码目录下. 将这些代码拷贝到`java-finagle-example/src/main/scala/thrift`目录下.
+
+现在我们来实现Thrift服务端代码. 打开`java-finagle-example/src/main/java/com/akkafun/finagle/thrift/ThriftServer.java`:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ThriftServer</span> <span class="kd">implements</span> <span class="n">DemoService</span><span class="o">&lt;</span><span class="n">Future</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ListeningServer</span> <span class="n">server</span> <span class="o">=</span> <span class="n">Thrift</span><span class="o">.</span><span class="na">serveIface</span><span class="o">(</span><span class="s">&quot;127.0.0.1:8081&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="nf">ThriftServer</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">result</span><span class="o">(</span><span class="n">server</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">method1</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;implement method1&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Future</span><span class="o">.</span><span class="na">value</span><span class="o">(</span><span class="s">&quot;abc&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="nf">method2</span><span class="o">(</span><span class="kt">int</span> <span class="n">a</span><span class="o">,</span> <span class="kt">int</span> <span class="n">b</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;implement method2&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Future</span><span class="o">.</span><span class="na">value</span><span class="o">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">BoxedUnit</span><span class="o">&gt;</span> <span class="nf">method3</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;implement method3&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Future</span><span class="o">.</span><span class="na">value</span><span class="o">(</span><span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+我们使用maven命令生成的Scala代码, 里面有一个DemoService接口. 我们现在要做的事情就是实现这个接口.
+我们需要实现DemoService接口声明的三个方法. 上面的实现都只是打印内容和返回简单的值.
+实现了这个接口, 接下来我们就可以写启动服务的代码了.
+上篇文章中我们启动Http服务器的时候使用的是`Http.server`相关的方法. 现在启动Thrift服务端可以使用`Thrift.serveIface`方法.
+第一个参数传入监听的ip和端口, 第二个参数传入接口的实现类. 这样服务端的代码就完成了.
+
+Thrift的客户端代码也相当简单. 打开`java-finagle-example/src/main/java/com/akkafun/finagle/thrift/ThriftClient.java`:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="nd">@SuppressWarnings</span><span class="o">(</span><span class="s">&quot;unchecked&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ThriftClient</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">static</span> <span class="n">Function1</span><span class="o">&lt;</span><span class="n">Throwable</span><span class="o">,</span> <span class="n">BoxedUnit</span><span class="o">&gt;</span> <span class="n">errorFunc</span> <span class="o">=</span> <span class="n">func</span><span class="o">(</span><span class="n">e</span> <span class="o">-&gt;</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;error: &quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">DemoService</span><span class="o">&lt;</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">demoService</span> <span class="o">=</span> <span class="n">Thrift</span><span class="o">.</span><span class="na">newIface</span><span class="o">(</span><span class="s">&quot;127.0.0.1:8081&quot;</span><span class="o">,</span> <span class="n">DemoService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Future</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">future1</span> <span class="o">=</span> <span class="n">demoService</span><span class="o">.</span><span class="na">method1</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">Future</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">future2</span> <span class="o">=</span> <span class="n">demoService</span><span class="o">.</span><span class="na">method2</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Future</span><span class="o">&lt;</span><span class="n">BoxedUnit</span><span class="o">&gt;</span> <span class="n">future3</span> <span class="o">=</span> <span class="n">demoService</span><span class="o">.</span><span class="na">method3</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">future1</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="n">func</span><span class="o">(</span><span class="n">r</span> <span class="o">-&gt;</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}));</span>
+</span><span class='line'>        <span class="n">future1</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">errorFunc</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">future2</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="n">func</span><span class="o">(</span><span class="n">r</span> <span class="o">-&gt;</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}));</span>
+</span><span class='line'>        <span class="n">future2</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">errorFunc</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">future3</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="n">func</span><span class="o">(</span><span class="n">r</span> <span class="o">-&gt;</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}));</span>
+</span><span class='line'>        <span class="n">future3</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">errorFunc</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">ready</span><span class="o">(</span><span class="n">future1</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">ready</span><span class="o">(</span><span class="n">future2</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">ready</span><span class="o">(</span><span class="n">future3</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+客户端代码中, 通过调用`Thrift.newIface`我们构造了一个DemoService的stub.
+之后即可对DemoService的方法进行调用. 虽然调用方式看起来很像是本地调用, 实际上还是RPC.
+DemoService的服务端实现只是很简单的返回了几个值, 客户端实现只是把返回值打印了出来.现在我们来运行看看.
+首先启动ThriftServer类, 然后启动ThriftClient. ThriftClient运行完毕自动结束, 你应该能在ThriftClient的控制台看到如下输出:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="n">implement</span> <span class="n">method2</span>
+</span><span class='line'><span class="n">implement</span> <span class="n">method3</span>
+</span><span class='line'><span class="n">implement</span> <span class="n">method1</span>
+</span></code></pre></td></tr></table></div></figure>
+ThriftServer控制台的输出:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="o">()</span>
+</span><span class='line'><span class="mi">3</span>
+</span><span class='line'><span class="n">abc</span>
+</span></code></pre></td></tr></table></div></figure>
+无论是客户端还是服务端, 方法被调用的顺序都是不固定的. 因为客户端的RPC调用是异步执行.
+
+Finagle的开发实战就暂时介绍到这里. 通过前面的介绍你应该能了解到, 使用Finagle开发一个服务是非常的简单.
+但是实际的多服务项目中, 几乎不会直接通过ip和端口来访问服务,
+而是使用[zookeeper](http://zookeeper.apache.org/)或[etcd](https://github.com/coreos/etcd)这种注册中心来完成.
+下篇文章我会介绍如何将Finagle服务注册到zookeeper中.
+并且我会介绍如何使用[zipkin](https://github.com/twitter/zipkin)来监控Finagle服务.
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用]]></title>
     <link href="http://skaka.me/blog/2016/05/01/finagle2/"/>
     <updated>2016-05-01T10:17:35+08:00</updated>
     <id>http://skaka.me/blog/2016/05/01/finagle2</id>
     <content type="html"><![CDATA[在[上篇文章](http://skaka.me/blog/2016/03/19/finagle1/)中我介绍了Finagle中的Future/Service/Filter.
 这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
-这两篇文章对应的源代码地址在[Github](https://github.com/sunnykaka/java-finagle-example)上.
-代码中有Java和Scala版本两套版本的实现, 但是这里我们只会介绍Java版本.  
+这两篇文章对应的源代码地址在[Github](https://github.com/sunnykaka/java-finagle-example).
+代码中有Java和Scala版本两套版本的实现, 但是这里我只会介绍Java版本.  
 
 首先来看echo应用的Server端代码, 打开`java-finagle-example/src/main/java/com/akkafun/finagle/Server.java`:
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>

@@ -9,9 +9,10 @@
   <meta name="author" content="skaka">
 
   
-  <meta name="description" content="在上篇文章中我介绍了Finagle中的Future/Service/Filter.
-这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
-这两篇文章对应的源代码地址在Github上. &hellip;">
+  <meta name="description" content="在上篇文章中我们开发了一个基于Http协议的echo服务端和客户端.
+这篇文章我们将开发一个基于Thrift协议的客户端和服务端.
+这两篇文章对应的源代码地址在Github.
+代码中有Java和Scala版本两套版本的实现, 但是这里我只会介绍Java版本. Thrift最早由Facebook开源 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -106,6 +107,78 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2016/05/02/finagle3/">微服务框架Finagle介绍 Part3: 在Finagle中开发基于Thrift协议的应用</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-05-02T21:32:55+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2016</span></span> <span class='time'>9:32 pm</span></time>
+        
+        
+         | <a href="/blog/2016/05/02/finagle3/#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在<a href="http://skaka.me/blog/2016/05/01/finagle2/">上篇文章</a>中我们开发了一个基于Http协议的echo服务端和客户端.
+这篇文章我们将开发一个基于Thrift协议的客户端和服务端.
+这两篇文章对应的源代码地址在<a href="https://github.com/sunnykaka/java-finagle-example">Github</a>.
+代码中有Java和Scala版本两套版本的实现, 但是这里我只会介绍Java版本.</p>
+
+<p><a href="http://thrift.apache.org/">Thrift</a>最早由Facebook开源, 后被Apache收录成为顶级项目. Thrift严格来说不只是一种协议,
+而是一个RPC框架. 使用Thrift, 我们只需要定义好使用的类型和接口声明, Thrift的代码生成工具能够自动为我们生成客户端和服务端代码.
+我们现在来看如何在Finagle中使用Thrift.</p>
+
+<p>首先定义一个Thrift的IDL文件, 文件位置在<code>java-finagle-example/src/main/thrift/DemoService.thrift</code>:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>namespace java com.akkafun.service.thrift
+</span><span class='line'>
+</span><span class='line'>service DemoService {
+</span><span class='line'>  string method1();
+</span><span class='line'>
+</span><span class='line'>  i32 method2(1: i32 a, 2: i32 b);
+</span><span class='line'>
+</span><span class='line'>  void method3();
+</span><span class='line'>
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>定义了一个DemoService服务, 这个服务有三个示例方法. <code>namespace</code>的语法是为接口定义一个命名空间(对应Java里的包).
+method1没有参数, 方法的返回值类型是字符串. method2有两个参数, a和b, 参数和返回值类型都是int32类型.
+method3无参数, 无返回值.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016/05/02/finagle3/">继续阅读 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2016/05/01/finagle2/">微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用</a></h1>
     
     
@@ -127,8 +200,8 @@
 
   <div class="entry-content"><p>在<a href="http://skaka.me/blog/2016/03/19/finagle1/">上篇文章</a>中我介绍了Finagle中的Future/Service/Filter.
 这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
-这两篇文章对应的源代码地址在<a href="https://github.com/sunnykaka/java-finagle-example">Github</a>上.
-代码中有Java和Scala版本两套版本的实现, 但是这里我们只会介绍Java版本.</p>
+这两篇文章对应的源代码地址在<a href="https://github.com/sunnykaka/java-finagle-example">Github</a>.
+代码中有Java和Scala版本两套版本的实现, 但是这里我只会介绍Java版本.</p>
 
 <p>首先来看echo应用的Server端代码, 打开<code>java-finagle-example/src/main/java/com/akkafun/finagle/Server.java</code>:</p>
 
@@ -390,66 +463,6 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/09/13/play3/">给Java开发者的Play Framework(2.4)介绍 Part3：搭建Play的开发环境</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-09-13T10:22:10+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>10:22 am</span></time>
-        
-        
-         | <a href="/blog/2015/09/13/play3/#comments">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>1. 开始前的准备</h3>
-
-<p>这篇文章会介绍Play项目开发环境的搭建，以及日常开发的常用命令。进行之前，首先得准备下面的工具：</p>
-
-<p>1.JDK8+<br/>
-2.<a href="http://www.scala-lang.org/">Scala 2.11.6+</a><br/>
-3.<a href="http://www.scala-sbt.org/">sbt 0.13.7+</a><br/>
-4.<a href="https://www.jetbrains.com/idea/">IntelliJ IDEA 14+</a><br/>
-5.<a href="http://www.mysql.com/">MySQL 5.5+</a> 或 <a href="https://mariadb.org/">MariaDB 10+</a><br/>
-6.<a href="http://redis.io/">Redis 2.7+</a><br/>
-7.科学上网工具</p>
-
-<p>这些软件安装都可以参照官方的文档，这里就不介绍了。</p>
-
-<p>推荐使用的IDE是IntelliJ IDEA，如果对Eclipse有执念的也可以考虑用Typesafe维护的<a href="http://scala-ide.org/">ScalaIDE</a>。<br/>
-但是在目前看来，IDEA对Scala的支持最好，另外IDEA相比Eclipse也有很多优点，没有尝试过的朋友可以试一下，保证你不会想切回Eclipse了：）</p>
-
-<p>MySQL和Redis是这篇文章的demo项目启动需要的，如果不打算运行项目可以忽略。</p>
-
-<p>另外科学上网工具也是需要的, demo项目的一些包需要连接Google Code仓库获取，而且没有科学上网的话下载速度会奇慢无比，相信我，你没有那么多时间用来浪费的。</p>
-
-<h3>2. 搭建开发环境</h3>
-
-<p>我的操作系统是Ubuntu 14.04，所以下面涉及到命令或文件路径地方，可能都是Linux风格的。如果你的操作系统是Windows或OS X，需要做相应替换。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015/09/13/play3/">继续阅读 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -463,6 +476,10 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
     <section>
   <h1>最新文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/05/02/finagle3/">微服务框架Finagle介绍 Part3: 在Finagle中开发基于Thrift协议的应用</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2016/05/01/finagle2/">微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用</a>
@@ -501,12 +518,12 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
 <section>
 	<h1>Categories</h1>
 	<ul id="categories">
-		<li class='category'><a href='/blog/categories/finagle/'>finagle (2)</a></li>
+		<li class='category'><a href='/blog/categories/finagle/'>finagle (3)</a></li>
 <li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
 <li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (1)</a></li>
 <li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
 <li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
-<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (3)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (4)</a></li>
 
 	</ul>
 </section>
