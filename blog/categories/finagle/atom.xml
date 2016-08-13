@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Finagle | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/finagle/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-05-08T01:06:39+08:00</updated>
+  <updated>2016-08-13T10:12:25+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -224,8 +224,7 @@ ThriftServer控制台的输出:
 Finagle的开发实战就暂时介绍到这里. 通过前面的介绍你应该能了解到, 使用Finagle开发一个服务是非常的简单.
 但是实际的多服务项目中, 几乎不会直接通过ip和端口来访问服务,
 而是使用[zookeeper](http://zookeeper.apache.org/)或[etcd](https://github.com/coreos/etcd)这种注册中心来完成.
-下篇文章我会介绍如何将Finagle服务注册到zookeeper中.
-并且我会介绍如何使用[zipkin](https://github.com/twitter/zipkin)来监控Finagle服务.
+下篇文章我会介绍如何将Finagle服务注册到zookeeper中以及如何使用[zipkin](https://github.com/twitter/zipkin)来监控Finagle服务.
 ]]></content>
   </entry>
   

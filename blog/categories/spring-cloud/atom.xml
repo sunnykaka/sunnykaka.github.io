@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Spring Cloud | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/spring-cloud/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-05-08T01:06:39+08:00</updated>
+  <updated>2016-08-13T10:12:25+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -12,6 +12,395 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[微服务框架Spring Cloud介绍 Part3: Mysteam项目结构与开发用户注册服务]]></title>
+    <link href="http://skaka.me/blog/2016/08/10/springcloud3/"/>
+    <updated>2016-08-10T10:06:10+08:00</updated>
+    <id>http://skaka.me/blog/2016/08/10/springcloud3</id>
+    <content type="html"><![CDATA[在[上一篇文章](http://skaka.me/blog/2016/08/04/springcloud2/)中我们简单的了解了一下Spring Cloud.
+因为Spring Cloud相关的内容较多, 所以我建了一个项目mysteam来演示Spring Cloud的使用, [GitHub地址](https://github.com/sunnykaka/mysteam).
+
+####1. 项目结构
+这是一个Maven项目, 下载下来之后直接导入IDE, 你会看到如下的项目结构(我用的是Intellij IDEA):
+<img src="/images/custom/20160810/mysteam_structure.png">
+
+普通目录:  
+docs: 存放文档资料, 例如数据库脚本, astah文件(UML工具)等.  
+logs: 运行日志存放目录.  
+公共模块:  
+apiutils: api模块公共父模块.  
+common: 服务模块公共父模块, 存放微服务共同依赖的逻辑, 例如事件处理, 定时任务等.  
+utils: 工具类模块.  
+基础服务模块:  
+eureka: eureka服务. 提供服务注册与服务发现. 这个服务之后会有专门的文章来介绍.  
+config: config服务. 提供配置管理服务. 这个服务之后会有专门的文章来介绍.  
+turbine: hystrix服务监控. 这个服务之后会有专门的文章来介绍.  
+服务模块:  
+account: 账户服务.  
+coupon: 优惠券服务.  
+order: 订单服务.  
+product: 产品服务.  
+user: 用户服务.  
+其他模块:  
+integration-test: 集成测试模块.  
+
+这些模块内部的项目结构大多类似, 以服务模块user为例.  
+api: api接口模块. 其他依赖user服务的服务会依赖这个模块.  
+core: user服务实现模块.  
+api和core模块内容都是标准的maven项目结构, 其中core模块主要有这么一些子目录:  
+context: 存放Spring Boot启动类.  
+dao: DAO层.  
+domain: Model层.
+service: Service层.  
+web: 存放Spring MVC Controller.  
+
+值得特别说明的是, 在真实的项目中, 一般每个服务都是一个独立的项目, 彼此之间只是通过pom引用. 如果代码都放到一个项目中,
+过一段时间你会发现每次打开IDE都是件痛苦的事情, 而且IDE运行速度会奇慢无比. 这样做也违背了微服务开发的本意: 各个服务之间相对独立.
+mysteam把所有的服务都放到一个项目中只是为了方便演示和运行. 如果你想将mysteam的模块都拆到独立项目中去也是相当的简单, 只要修改pom文件即可.  
+
+好了, 项目结构介绍完, 接下来我们要做点正事了: ) 实现用户注册服务.
+
+####2. 实现Model
+用户表的结构相当简单, 只有三个字段. sql文件在`$YOUR_PATH/mysteam/user/docs/user-service.sql`. 我们首先创建实体类.
+文件位置在`$YOUR_PATH/mysteam/user/core/src/main/java/com/akkafun/user/domain/User.java`.
+<!-- more -->
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
+</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;user&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">User</span> <span class="kd">extends</span> <span class="n">VersionEntity</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Id</span>
+</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">GenerationType</span><span class="o">.</span><span class="na">AUTO</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Long</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Column</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">username</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Column</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">password</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Long</span> <span class="nf">getId</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setId</span><span class="o">(</span><span class="n">Long</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">id</span> <span class="o">=</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getUsername</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">username</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setUsername</span><span class="o">(</span><span class="n">String</span> <span class="n">username</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">username</span> <span class="o">=</span> <span class="n">username</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getPassword</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">password</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setPassword</span><span class="o">(</span><span class="n">String</span> <span class="n">password</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">password</span> <span class="o">=</span> <span class="n">password</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+实体类很简单, 使用的是JPA注解, 继承抽象基类VersionEntity来获得乐观锁控制功能.  
+
+####3. 实现DAO
+DAO层使用的是[Spring Data JPA](http://docs.spring.io/spring-data/data-jpa/docs/current/reference/html/),  
+目录在`$YOUR_PATH/mysteam/user/core/src/main/java/com/akkafun/user/dao`, DAO相对简单也不是重点, 这里就不介绍了.
+
+####4. 实现Service
+Service类是`$YOUR_PATH/mysteam/user/core/src/main/java/com/akkafun/user/service/UserService.java`, 我们看一下用户注册的业务逻辑:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Transactional</span>
+</span><span class='line'><span class="kd">public</span> <span class="n">User</span> <span class="nf">register</span><span class="o">(</span><span class="n">RegisterDto</span> <span class="n">registerDto</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span><span class="o">(</span><span class="n">isUsernameExist</span><span class="o">(</span><span class="n">registerDto</span><span class="o">.</span><span class="na">getUsername</span><span class="o">(),</span> <span class="n">Optional</span><span class="o">.</span><span class="na">empty</span><span class="o">()))</span> <span class="o">{</span>                         <span class="c1">//1</span>
+</span><span class='line'>        <span class="k">throw</span> <span class="k">new</span> <span class="nf">AppBusinessException</span><span class="o">(</span><span class="n">UserErrorCode</span><span class="o">.</span><span class="na">UsernameExist</span><span class="o">,</span>
+</span><span class='line'>                <span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&quot;用户名%s已存在&quot;</span><span class="o">,</span> <span class="n">registerDto</span><span class="o">.</span><span class="na">getUsername</span><span class="o">()));</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">User</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">user</span><span class="o">.</span><span class="na">setUsername</span><span class="o">(</span><span class="n">registerDto</span><span class="o">.</span><span class="na">getUsername</span><span class="o">());</span>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">user</span><span class="o">.</span><span class="na">setPassword</span><span class="o">(</span><span class="n">PasswordHash</span><span class="o">.</span><span class="na">createHash</span><span class="o">(</span><span class="n">registerDto</span><span class="o">.</span><span class="na">getPassword</span><span class="o">()));</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">GeneralSecurityException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;创建哈希密码的时候发生错误&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">throw</span> <span class="k">new</span> <span class="nf">AppBusinessException</span><span class="o">(</span><span class="s">&quot;用户注册失败&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">userRepository</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">user</span><span class="o">);</span>                                                                  <span class="c1">//2</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//用户创建事件</span>
+</span><span class='line'>    <span class="n">eventBus</span><span class="o">.</span><span class="na">publish</span><span class="o">(</span><span class="k">new</span> <span class="nf">UserCreated</span><span class="o">(</span><span class="n">user</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="n">user</span><span class="o">.</span><span class="na">getUsername</span><span class="o">(),</span> <span class="n">user</span><span class="o">.</span><span class="na">getCreateTime</span><span class="o">()));</span>  <span class="c1">//3</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">user</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">isUsernameExist</span><span class="o">(</span><span class="n">String</span> <span class="n">username</span><span class="o">,</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">userId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">userRepository</span><span class="o">.</span><span class="na">isUsernameExist</span><span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">userId</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+1.注册之前首先判断用户名是否存在, 判断逻辑在UserRepositoryImpl类里. 如果用户名重复就抛出异常.  
+2.调用DAO的save方法持久化用户到数据库.  
+3.发送用户创建事件.  
+
+注意register方法上有`@Transactional`注解, 代表事务边界是在service层. register方法构成一个事务, 包括事件发送.
+关于事件处理后续有专门的文章介绍, 这里先略过.
+
+####5. 实现Controller
+现在来看下Controller层的处理. 打开`$YOUR_PATH/mysteam/user/core/src/main/java/com/akkafun/user/web/UserController.java`:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@RestController</span>
+</span><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">produces</span> <span class="o">=</span> <span class="n">MediaType</span><span class="o">.</span><span class="na">APPLICATION_JSON_VALUE</span><span class="o">)</span>                  <span class="c1">//1</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserController</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Autowired</span>
+</span><span class='line'>    <span class="n">UserService</span> <span class="n">userService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">USER_REGISTER_URL</span><span class="o">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">RequestMethod</span><span class="o">.</span><span class="na">POST</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">UserDto</span> <span class="nf">register</span><span class="o">(</span><span class="nd">@Valid</span> <span class="nd">@RequestBody</span> <span class="n">RegisterDto</span> <span class="n">registerDto</span><span class="o">)</span> <span class="o">{</span>    <span class="c1">//2</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">userService</span><span class="o">.</span><span class="na">register</span><span class="o">(</span><span class="n">registerDto</span><span class="o">);</span>                        <span class="c1">//3</span>
+</span><span class='line'>        <span class="n">UserDto</span> <span class="n">userDto</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">UserDto</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">userDto</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="n">user</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">userDto</span><span class="o">.</span><span class="na">setUsername</span><span class="o">(</span><span class="n">user</span><span class="o">.</span><span class="na">getUsername</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">userDto</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+这就是一个很普通的Spring MVC Controller.  
+1. 我们的Rest服务暂且只提供json数据的请求和响应, 所以在class级别加了一个注解`@RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)`.  
+2. 注册是POST请求, 我们使用DTO对象RegisterDto来收集数据. 注意RegisterDto是user服务的api模块提供的, 意味着其他依赖了user服务的模块可以直接使用RegisterDto.
+RequestBody类使用了[Java Validation](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/validation.html)注解来校验参数的合法性.  
+3. 调用UserService的register方法完成注册, 然后将User实体对象转化成UserDto对象返回.  
+
+####6. 运行
+到此就开发完了. 现在我们可以启动user服务来看一下效果(user服务运行在23101端口).  
+(**提示: 运行下面的UserApplication之前, 需要先启动Eureka服务和Config服务, 启动方法请参考[上一篇文章](http://skaka.me/blog/2016/08/04/springcloud2/).**)  
+打开`$YOUR_PATH/mysteam/user/core/src/main/java/com/akkafun/context/web/UserApplication.java`, 直接运行main方法.
+项目启动之后, 在浏览器访问http://localhost:23101/swagger-ui.html, 你应该能看见如下的页面:
+<img src="/images/custom/20160810/user_swagger_ui.png">
+
+这个页面是[SpringFox](http://springfox.github.io/springfox)根据我们的Controller类, 自动生成的swagger ui页面.
+关于swagger和SpringFox, 之后会有专门的文章来介绍. 这个页面列出了user服务下所有的api信息(暂时只有一个register), 包括url链接, 请求参数, 返回值等,
+你也可以在Controller类中加入`@ApiOperation`这种Swagger注解来对接口进行更详细的描述. 此外, 在这个页面你还可以直接对api进行测试, 例如在registerDto参数栏填入
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">{</span>
+</span><span class='line'>  <span class="s">&quot;password&quot;</span><span class="o">:</span> <span class="s">&quot;123456&quot;</span><span class="o">,</span>
+</span><span class='line'>  <span class="s">&quot;username&quot;</span><span class="o">:</span> <span class="s">&quot;aaa&quot;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+然后点击下面的Try it out!按钮, 你就能看见服务器的返回结果了.  
+
+大功告成. 整个过程除去实体类的话, 真正的业务代码只有几十行. 代码量虽少, 但是我们已经开发了一个完整的注册服务,
+服务不但自动生成了完整的API文档, 同时已经能通过Eureka被其他服务调用了(下一篇文章演示).
+当然, 这一切都仰仗于Spring Cloud, Netflix OSS, SpringFox, Swagger等一系列开源软件的帮助, 程序员的生产力也因此越来越高.
+看着上面的步骤, 你也许会觉得, 开发一个微服务也是相当简单的嘛. 事实上, 我们还没有接触到真正的难点, 因为服务之间还没有交互.
+下篇文章我会通过下单服务, 介绍如何进行服务之间的相互调用以及如何处理事件来保证事务完整性.
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[微服务框架Spring Cloud介绍 Part2: Spring Cloud与微服务]]></title>
+    <link href="http://skaka.me/blog/2016/08/03/springcloud2/"/>
+    <updated>2016-08-03T22:09:25+08:00</updated>
+    <id>http://skaka.me/blog/2016/08/03/springcloud2</id>
+    <content type="html"><![CDATA[之前介绍过[微服务的概念与Finagle框架](http://skaka.me/blog/2016/03/19/finagle1/), 这个系列介绍Spring Cloud.
+
+Spring Cloud还是一个相对较新的框架, 今年(2016)才推出1.0的release版本. 虽然Spring Cloud时间最短, 但是相比我之前用过的Dubbo和Finagle, Spring Cloud提供的功能最齐全.
+
+Spring Cloud完全依赖于Spring Boot, 我先简单介绍下Spring Boot.
+[Spring Boot](http://projects.spring.io/spring-boot/)是Pivotal在Spring基础上推出的一个支持快速开发的框架. 如果是新项目, 建议基于Spring Boot而不是Spring.
+以前使用Spring的项目, 需要自己指定一大堆项目依赖, 例如依赖Spring Core, Spring MVC, Mybatis等等, Spring Boot将这些依赖都模块化好了, 你不再需要自己手动去添加多个依赖项.
+另外Spring Boot默认内嵌了一个Servlet容器, 你的页面可以直接通过main方法启动访问了, 不再需要部署到单独的应用服务器中, 这样应用的开发调试都会方便很多.
+Spring Boot的这些特点使得它比较适合用来做微服务的基础框架, 但是要开发一个完整的微服务系统可不仅仅是从命令行启动一个web系统这么简单. Pivotal看到了这点, 推出了Spring Cloud.
+
+[Spring Cloud](http://projects.spring.io/spring-cloud/)基于Spring Boot, 由众多的子项目组成. 例如[Spring Cloud Config](http://cloud.spring.io/spring-cloud-config)是一个中心化的配置管理服务,
+用来解决微服务环境下配置文件分散管理的难题, [Spring Cloud Stream](http://cloud.spring.io/spring-cloud-stream)是一个消息中间件抽象层, 目前支持Redis, Rabbit MQ和Kafka,
+[Spring Cloud Netflix](http://cloud.spring.io/spring-cloud-netflix)整合了[Netflix OSS](https://netflix.github.io/), 可以直接在项目中使用Netflix OSS.
+目前Spring Cloud的子项目有接近20个, 如果要使用Spring Cloud, 务必先将子项目都了解一遍, 得知道哪些功能Spring Cloud已经提供了, 避免团队花费大量时间重复造轮子.
+
+Spring Cloud是伴随着微服务的概念诞生的. 毫无疑问, 微服务真正落地是一项艰巨的任务. 不但是技术的变革, 也是开发方式的转变. 仅仅依靠Dubbo或Spring Cloud开发几个互相调用的服务不能算做是微服务.
+一个合格的微服务系统必然包括从设计(从业务层面划分服务, 独立数据库), 到开发(选用合适的架构和工具, 解决CAP问题), 到测试(持续集成, 自动化测试), 到运维(容器化, 服务监控, 服务容错)的一系列解决方案.
+
+我这个系列的博客就是介绍如何借助Spring Cloud和Netflix OSS, 来解决上面提到的问题.
+之后的博客主要会涉及下面这些技术:  
+**使用eureka和Netflix Ribbon进行服务注册和服务发现**  
+**使用Spring Cloud Stream, zookeeper和kafka实现分布式事务**  
+**使用hystrix实现服务隔离, hystrix dashboard和turbine进行服务监控**  
+**使用Spring MVC和Swagger实现REST API**  
+**使用Spring Cloud Config实现配置集中管理**  
+...  
+
+内容比较多, 我会分成多篇博客. 我不想泛泛地谈概念, 这样有点无趣, 对实际工作也起不到什么帮助.
+我为演示这些技术的使用, 搭建了一个项目: mysteam.
+我选择了一个简单的问题域, 电商系统里最基础的下单功能. 围绕下单功能, 系统拆分成了五个服务:  
+**用户服务(user service)**  
+**账户服务(account service)**  
+**产品服务(product service)**  
+**优惠券服务(coupon service)**  
+**订单服务(order service)**  
+下面是mysteam的架构示意图:
+<img src="/images/custom/20160804/mysteam_arch.png">
+我们的关注点主要在Backend Services和MQ, MySQL这一部分. 服务之间通过Rest API和事件进行通信. Rest API主要用来进行一些只读等不需要事务的操作,
+涉及事务的操作一般使用事件来完成. 具体怎么做后面有专门的博客来介绍.
+
+首先, 让我们来个Hello World, 先介绍如何将mysteam下载下来并启动.
+一旦涉及微服务, 项目结构和环境都会比较复杂, 我已经尽量简化了, 请系好安全带: )
+
+####1. 环境准备
+**JDK 8+**  
+**MySQL**  
+**[kafka 0.8.22](https://www.apache.org/dyn/closer.cgi?path=/kafka/0.8.2.2/kafka_2.11-0.8.2.2.tgz)**  
+**zookeeper** (可以下载, 也可以直接使用kafka自带的zookeeper)  
+**Intellij IDEA或Eclipse** (这个项目结构比较复杂, IDE能起到很大帮助)  
+
+<!-- more -->
+
+####2. 从GitHub上下载项目
+需要下载两个项目:  
+**[mysteam](https://github.com/sunnykaka/mysteam)**  
+**[mysteam-config-repo](https://github.com/sunnykaka/mysteam-config-repo)**  
+mysteam是主项目, mysteam-config-repo是配置文件存放仓库, 后面讲Spring Cloud Config的时候会用到.
+
+####3. 修改配置文件
+######1. 修改配置文件读取路径
+假设你的mysteam-config-repo项目存放路径是`D:/mysteam-config-repo`,
+打开`$YOUR_PATH/mysteam/config/src/main/resources/application.yml`, 找到`uri: https://github.com/sunnykaka/mysteam-config-repo`这一行,
+替换为`uri: file:///D:/mysteam-config-repo`.(如果你是linux系统, 并且mysteam-config-repo项目存放路径是`/home/my/mysteam-config-repo`,
+则改为`uri: file:///home/my/mysteam-config-repo`).
+
+######2. 修改kafka和zookeeper地址
+打开`$YOUR_PATH/mysteam/config/src/main/resources/application.yml`, 将`brokers: 192.168.239.129:9092,192.168.239.129:9093,192.168.239.129:9094`修改成你的
+kafka地址, 将`zkNodes: 192.168.239.129:2181`修改成你的zookeeper地址.
+打开`$YOUR_PATH/mysteam-config-repo/application.yml`, 同样, 将`brokers: 192.168.239.129:9092,192.168.239.129:9093,192.168.239.129:9094`修改成你的
+kafka地址, 将`zkNodes: 192.168.239.129:2181`修改成你的zookeeper地址.
+
+######3. 修改MySQL数据库地址
+进入`$YOUR_PATH/mysteam-config-repo`目录, 打开`account.yml`, `coupon.yml`, `order.yml`, `product.yml`, `user.yml`这几个文件,
+找到`datasource`的配置, 将数据库的ip地址和端口, 以及用户名和密码修改成你的配置.
+
+######4. 初始化数据库
+数据库初始化文件是`$YOUR_PATH/mysteam/docs/init_database.sql`. 执行方法(假设你的mysteam目录是`D:/mysteam`, 数据库在本机3306, 用户名密码都是root):
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">cd</span> <span class="nl">D:</span><span class="o">/</span><span class="n">mysteam</span>
+</span><span class='line'><span class="n">mysql</span> <span class="o">-</span><span class="n">uroot</span> <span class="o">-</span><span class="n">proot</span> <span class="o">&lt;</span> <span class="n">docs</span><span class="o">/</span><span class="n">init_database</span><span class="o">.</span><span class="na">sql</span>
+</span></code></pre></td></tr></table></div></figure>
+执行完成之后, 进入数据库应该可以看见5个数据库已经初始化好了.
+
+####5. 启动Eureka服务, Config服务, 并运行测试.
+主要介绍如何在IDE中启动服务.
+因为Eureka和Config服务被其他服务使用, 所以要首先启动这两个服务. 其中Eureka服务要最先启动.
+######1. 启动Eureka服务, 运行在1111端口
+打开`$YOUR_PATH/mysteam/eureka/src/main/java/com/akkafun/eureka/EurekaApplication.java`, 直接运行main方法.
+######2. 启动Config服务, 运行在8888端口.
+打开`$YOUR_PATH/mysteam/config/src/main/java/com/akkafun/config/ConfigApplication.java`, 直接运行main方法.
+######3. 运行EventBusTest测试.
+打开`$YOUR_PATH/mysteam/user/core/src/test/java/com/akkafun/common/event/service/EventBusTest.java`, 运行junit测试.
+
+这个测试的运行时间稍长, 在我机器上需要3分钟左右. 如果测试全部通过, 代表环境OK了.
+如果运行报错, 则检查下前面的步骤看看问题出在哪儿. 特别关注下kafka和zookeeper的服务是不是启动了, 并且ip是否正确.
+
+下一篇我会介绍mysteam的maven项目结构, 以及实现用户注册功能.
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[微服务框架Spring Cloud介绍 Part1: 使用事件和消息队列实现分布式事务]]></title>

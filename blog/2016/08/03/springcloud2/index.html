@@ -1,0 +1,405 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>微服务框架Spring Cloud介绍 Part2: Spring Cloud与微服务 - skaka的博客</title>
+  <meta name="author" content="skaka">
+
+  
+  <meta name="description" content="微服务框架Spring Cloud介绍 Part2: Spring Cloud与微服务">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://skaka.me/blog/2016/08/03/springcloud2/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="skaka的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  -->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-63902363-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<!--
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-63902363-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = 'https://raw.githubusercontent.com/sunnykaka/data/master/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+-->
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">skaka的博客</a></h1>
+  
+    <h2>every flight begins with a fall</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="skaka.me">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">微服务框架Spring Cloud介绍 Part2: Spring Cloud与微服务</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-08-03T22:09:25+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>3</span><span class='date-suffix'>rd</span>, <span class='date-year'>2016</span></span> <span class='time'>10:09 pm</span></time>
+        
+        
+         | <a href="#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>之前介绍过<a href="http://skaka.me/blog/2016/03/19/finagle1/">微服务的概念与Finagle框架</a>, 这个系列介绍Spring Cloud.</p>
+
+<p>Spring Cloud还是一个相对较新的框架, 今年(2016)才推出1.0的release版本. 虽然Spring Cloud时间最短, 但是相比我之前用过的Dubbo和Finagle, Spring Cloud提供的功能最齐全.</p>
+
+<p>Spring Cloud完全依赖于Spring Boot, 我先简单介绍下Spring Boot.
+<a href="http://projects.spring.io/spring-boot/">Spring Boot</a>是Pivotal在Spring基础上推出的一个支持快速开发的框架. 如果是新项目, 建议基于Spring Boot而不是Spring.
+以前使用Spring的项目, 需要自己指定一大堆项目依赖, 例如依赖Spring Core, Spring MVC, Mybatis等等, Spring Boot将这些依赖都模块化好了, 你不再需要自己手动去添加多个依赖项.
+另外Spring Boot默认内嵌了一个Servlet容器, 你的页面可以直接通过main方法启动访问了, 不再需要部署到单独的应用服务器中, 这样应用的开发调试都会方便很多.
+Spring Boot的这些特点使得它比较适合用来做微服务的基础框架, 但是要开发一个完整的微服务系统可不仅仅是从命令行启动一个web系统这么简单. Pivotal看到了这点, 推出了Spring Cloud.</p>
+
+<p><a href="http://projects.spring.io/spring-cloud/">Spring Cloud</a>基于Spring Boot, 由众多的子项目组成. 例如<a href="http://cloud.spring.io/spring-cloud-config">Spring Cloud Config</a>是一个中心化的配置管理服务,
+用来解决微服务环境下配置文件分散管理的难题, <a href="http://cloud.spring.io/spring-cloud-stream">Spring Cloud Stream</a>是一个消息中间件抽象层, 目前支持Redis, Rabbit MQ和Kafka,
+<a href="http://cloud.spring.io/spring-cloud-netflix">Spring Cloud Netflix</a>整合了<a href="https://netflix.github.io/">Netflix OSS</a>, 可以直接在项目中使用Netflix OSS.
+目前Spring Cloud的子项目有接近20个, 如果要使用Spring Cloud, 务必先将子项目都了解一遍, 得知道哪些功能Spring Cloud已经提供了, 避免团队花费大量时间重复造轮子.</p>
+
+<p>Spring Cloud是伴随着微服务的概念诞生的. 毫无疑问, 微服务真正落地是一项艰巨的任务. 不但是技术的变革, 也是开发方式的转变. 仅仅依靠Dubbo或Spring Cloud开发几个互相调用的服务不能算做是微服务.
+一个合格的微服务系统必然包括从设计(从业务层面划分服务, 独立数据库), 到开发(选用合适的架构和工具, 解决CAP问题), 到测试(持续集成, 自动化测试), 到运维(容器化, 服务监控, 服务容错)的一系列解决方案.</p>
+
+<p>我这个系列的博客就是介绍如何借助Spring Cloud和Netflix OSS, 来解决上面提到的问题.
+之后的博客主要会涉及下面这些技术:<br/>
+<strong>使用eureka和Netflix Ribbon进行服务注册和服务发现</strong><br/>
+<strong>使用Spring Cloud Stream, zookeeper和kafka实现分布式事务</strong><br/>
+<strong>使用hystrix实现服务隔离, hystrix dashboard和turbine进行服务监控</strong><br/>
+<strong>使用Spring MVC和Swagger实现REST API</strong><br/>
+<strong>使用Spring Cloud Config实现配置集中管理</strong><br/>
+&hellip;</p>
+
+<p>内容比较多, 我会分成多篇博客. 我不想泛泛地谈概念, 这样有点无趣, 对实际工作也起不到什么帮助.
+我为演示这些技术的使用, 搭建了一个项目: mysteam.
+我选择了一个简单的问题域, 电商系统里最基础的下单功能. 围绕下单功能, 系统拆分成了五个服务:<br/>
+<strong>用户服务(user service)</strong><br/>
+<strong>账户服务(account service)</strong><br/>
+<strong>产品服务(product service)</strong><br/>
+<strong>优惠券服务(coupon service)</strong><br/>
+<strong>订单服务(order service)</strong><br/>
+下面是mysteam的架构示意图:
+<img src="/images/custom/20160804/mysteam_arch.png">
+我们的关注点主要在Backend Services和MQ, MySQL这一部分. 服务之间通过Rest API和事件进行通信. Rest API主要用来进行一些只读等不需要事务的操作,
+涉及事务的操作一般使用事件来完成. 具体怎么做后面有专门的博客来介绍.</p>
+
+<p>首先, 让我们来个Hello World, 先介绍如何将mysteam下载下来并启动.
+一旦涉及微服务, 项目结构和环境都会比较复杂, 我已经尽量简化了, 请系好安全带: )</p>
+
+<h4>1. 环境准备</h4>
+
+<p><strong>JDK 8+</strong><br/>
+<strong>MySQL</strong><br/>
+<strong><a href="https://www.apache.org/dyn/closer.cgi?path=/kafka/0.8.2.2/kafka_2.11-0.8.2.2.tgz">kafka 0.8.22</a></strong><br/>
+<strong>zookeeper</strong> (可以下载, 也可以直接使用kafka自带的zookeeper)<br/>
+<strong>Intellij IDEA或Eclipse</strong> (这个项目结构比较复杂, IDE能起到很大帮助)</p>
+
+<!-- more -->
+
+
+<h4>2. 从GitHub上下载项目</h4>
+
+<p>需要下载两个项目:<br/>
+<strong><a href="https://github.com/sunnykaka/mysteam">mysteam</a></strong><br/>
+<strong><a href="https://github.com/sunnykaka/mysteam-config-repo">mysteam-config-repo</a></strong><br/>
+mysteam是主项目, mysteam-config-repo是配置文件存放仓库, 后面讲Spring Cloud Config的时候会用到.</p>
+
+<h4>3. 修改配置文件</h4>
+
+<h6>1. 修改配置文件读取路径</h6>
+
+<p>假设你的mysteam-config-repo项目存放路径是<code>D:/mysteam-config-repo</code>,
+打开<code>$YOUR_PATH/mysteam/config/src/main/resources/application.yml</code>, 找到<code>uri: https://github.com/sunnykaka/mysteam-config-repo</code>这一行,
+替换为<code>uri: file:///D:/mysteam-config-repo</code>.(如果你是linux系统, 并且mysteam-config-repo项目存放路径是<code>/home/my/mysteam-config-repo</code>,
+则改为<code>uri: file:///home/my/mysteam-config-repo</code>).</p>
+
+<h6>2. 修改kafka和zookeeper地址</h6>
+
+<p>打开<code>$YOUR_PATH/mysteam/config/src/main/resources/application.yml</code>, 将<code>brokers: 192.168.239.129:9092,192.168.239.129:9093,192.168.239.129:9094</code>修改成你的
+kafka地址, 将<code>zkNodes: 192.168.239.129:2181</code>修改成你的zookeeper地址.
+打开<code>$YOUR_PATH/mysteam-config-repo/application.yml</code>, 同样, 将<code>brokers: 192.168.239.129:9092,192.168.239.129:9093,192.168.239.129:9094</code>修改成你的
+kafka地址, 将<code>zkNodes: 192.168.239.129:2181</code>修改成你的zookeeper地址.</p>
+
+<h6>3. 修改MySQL数据库地址</h6>
+
+<p>进入<code>$YOUR_PATH/mysteam-config-repo</code>目录, 打开<code>account.yml</code>, <code>coupon.yml</code>, <code>order.yml</code>, <code>product.yml</code>, <code>user.yml</code>这几个文件,
+找到<code>datasource</code>的配置, 将数据库的ip地址和端口, 以及用户名和密码修改成你的配置.</p>
+
+<h6>4. 初始化数据库</h6>
+
+<p>数据库初始化文件是<code>$YOUR_PATH/mysteam/docs/init_database.sql</code>. 执行方法(假设你的mysteam目录是<code>D:/mysteam</code>, 数据库在本机3306, 用户名密码都是root):</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd D:/mysteam
+</span><span class='line'>mysql -uroot -proot &lt; docs/init_database.sql</span></code></pre></td></tr></table></div></figure>
+
+
+<p>执行完成之后, 进入数据库应该可以看见5个数据库已经初始化好了.</p>
+
+<h4>5. 启动Eureka服务, Config服务, 并运行测试.</h4>
+
+<p>主要介绍如何在IDE中启动服务.
+因为Eureka和Config服务被其他服务使用, 所以要首先启动这两个服务. 其中Eureka服务要最先启动.</p>
+
+<h6>1. 启动Eureka服务, 运行在1111端口</h6>
+
+<p>打开<code>$YOUR_PATH/mysteam/eureka/src/main/java/com/akkafun/eureka/EurekaApplication.java</code>, 直接运行main方法.</p>
+
+<h6>2. 启动Config服务, 运行在8888端口.</h6>
+
+<p>打开<code>$YOUR_PATH/mysteam/config/src/main/java/com/akkafun/config/ConfigApplication.java</code>, 直接运行main方法.</p>
+
+<h6>3. 运行EventBusTest测试.</h6>
+
+<p>打开<code>$YOUR_PATH/mysteam/user/core/src/test/java/com/akkafun/common/event/service/EventBusTest.java</code>, 运行junit测试.</p>
+
+<p>这个测试的运行时间稍长, 在我机器上需要3分钟左右. 如果测试全部通过, 代表环境OK了.
+如果运行报错, 则检查下前面的步骤看看问题出在哪儿. 特别关注下kafka和zookeeper的服务是不是启动了, 并且ip是否正确.</p>
+
+<p>下一篇我会介绍mysteam的maven项目结构, 以及实现用户注册功能.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">skaka</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-08-03T22:09:25+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>3</span><span class='date-suffix'>rd</span>, <span class='date-year'>2016</span></span> <span class='time'>10:09 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/spring-cloud/'>spring cloud</a>, <a class='category' href='/blog/categories/wei-fu-wu/'>微服务</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016/05/02/finagle3/" title="Previous Post: 微服务框架Finagle介绍 Part3: 在Finagle中开发基于Thrift协议的应用">&laquo; 微服务框架Finagle介绍 Part3: 在Finagle中开发基于Thrift协议的应用</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2016/08/10/springcloud3/" title="Next Post: 微服务框架Spring Cloud介绍 Part3: mysteam项目结构与开发用户注册服务">微服务框架Spring Cloud介绍 Part3: mysteam项目结构与开发用户注册服务 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h1>Comments</h1>
+    <div id="comments" aria-live="polite"><!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread" data-title="微服务框架Spring Cloud介绍 Part2: Spring Cloud与微服务"></div>
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"skaka"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0]
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/08/10/springcloud3/">微服务框架Spring Cloud介绍 Part3: Mysteam项目结构与开发用户注册服务</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/08/03/springcloud2/">微服务框架Spring Cloud介绍 Part2: Spring Cloud与微服务</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/05/02/finagle3/">微服务框架Finagle介绍 Part3: 在Finagle中开发基于Thrift协议的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/05/01/finagle2/">微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/04/21/springcloud1/">微服务框架Spring Cloud介绍 Part1: 使用事件和消息队列实现分布式事务</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/03/19/finagle1/">微服务框架Finagle介绍 Part1: Future, Service, Filter</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/12/19/functor-applicative-monad-scala-haskell/">简单介绍函数式编程中的Functor(函子)，Applicative(加强版函子)，Monad(单子)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/13/play3/">给Java开发者的Play Framework(2.4)介绍 Part3：搭建Play的开发环境</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/08/17/play2/">给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/27/play1/">给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+	<h1>Categories</h1>
+	<ul id="categories">
+		<li class='category'><a href='/blog/categories/finagle/'>finagle (3)</a></li>
+<li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
+<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (3)</a></li>
+<li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
+<li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (6)</a></li>
+
+	</ul>
+</section>
+
+
+
+
+<section>
+  <h1>关于我</h1>
+  <p>我是刘斌，一名软件工程师，居住在深圳。</p>
+  <p>你可以通过<a href="mailto:sunnykaka0721@gmail.com">email</a>联系我，或是<a href="http://weibo.com/sunnykaka">新浪微博</a></p>
+</section>
+<section>
+<h1>最新评论</h1>
+<ul class="ds-recent-comments" data-num-items="10" data-show-avatars="0" data-show-time="0" data-show-title="0" data-show-admin="0" data-excerpt-length="18"></ul>
+
+</section>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2016 - skaka -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
