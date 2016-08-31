@@ -9,8 +9,8 @@
   <meta name="author" content="skaka">
 
   
-  <meta name="description" content="在上一篇文章中我们简单的了解了一下Spring Cloud.
-因为Spring Cloud相关的内容较多, 所以我建了一个项目mysteam来演示Spring Cloud的使用, GitHub地址. 1. 项目结构 这是一个Maven项目, 下载下来之后直接导入IDE, 你会看到如下的项目结构( &hellip;">
+  <meta name="description" content="在上一篇文章中我们开发了一个用户注册服务. 这篇文章我将介绍如何开发mysteam订单服务中的下单功能,
+下单功能会涉及服务之间的交互与事件的处理, 并且我会对开发过程中用到的框架和类库进行简单地讲解. 开始写代码之前, 我们先来看看下单的处理流程: 其中1,2,3,4, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -99,6 +99,71 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/08/25/springcloud4/">微服务框架Spring Cloud介绍 Part4: 使用Eureka, Ribbon, Feign实现REST服务客户端</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-08-25T19:52:31+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>25</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>7:52 pm</span></time>
+        
+        
+         | <a href="/blog/2016/08/25/springcloud4/#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在<a href="http://skaka.me/blog/2016/08/10/springcloud3/">上一篇文章</a>中我们开发了一个用户注册服务. 这篇文章我将介绍如何开发mysteam订单服务中的下单功能,
+下单功能会涉及服务之间的交互与事件的处理, 并且我会对开发过程中用到的框架和类库进行简单地讲解. 开始写代码之前, 我们先来看看下单的处理流程:
+<img src="/images/custom/20160825/place_order.png"></p>
+
+<p>其中1,2,3,4,11步的黑色箭头代表是同步操作, 5,6,7,8,9,10步是异步操作.
+下单接口接收要订购的产品ID, 数量和要使用的优惠券ID, 然后调用产品服务的接口查询产品信息, 调用优惠券接口校验优惠券是否有效,
+以及调用账户接口判断账户金额是否足够(mysteam是一个虚拟物品商城, 采用先充值后购买的形式). 如果这些校验都成功, 订单服务会发送账户扣款事件和优惠券使用事件到MQ,
+账户服务和优惠券服务会从MQ读取事件进行处理, 如果处理成功, 订单服务将能接收到结果, 并且将订单状态置为<code>下单成功</code>, 如果处理失败或超时, 订单状态会被置为<code>下单失败</code>.</p>
+
+<h4>1. 实现Model</h4>
+
+<p>流程清楚了, 现在我们来看代码. 订单类是<code>$YOUR_PATH/mysteam/order/core/src/main/java/com/akkafun/order/domain/Order.java</code>, 订单类和前面的用户类类似, 其中有两个字段需要注意一下:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Column</span>
+</span><span class='line'><span class="nd">@Enumerated</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">EnumType</span><span class="o">.</span><span class="na">STRING</span><span class="o">)</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">OrderStatus</span> <span class="n">status</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@OneToMany</span><span class="o">(</span><span class="n">fetch</span> <span class="o">=</span> <span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">,</span> <span class="n">mappedBy</span> <span class="o">=</span> <span class="s">&quot;order&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">OrderItem</span><span class="o">&gt;</span> <span class="n">orderItemList</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;(</span><span class="mi">0</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>OrderStatus是一个枚举, 表示订单状态. OrderItem是订单项.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016/08/25/springcloud4/">继续阅读 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -432,71 +497,6 @@ method3无参数, 无返回值.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/04/21/springcloud1/">微服务框架Spring Cloud介绍 Part1: 使用事件和消息队列实现分布式事务</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-04-21T11:21:45+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2016</span></span> <span class='time'>11:21 am</span></time>
-        
-        
-         | <a href="/blog/2016/04/21/springcloud1/#comments">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>不同于单一架构应用(Monolith), 分布式环境下, 进行事务操作将变得困难, 因为分布式环境通常会有多个数据源,
-只用本地数据库事务难以保证多个数据源数据的一致性.
-这种情况下, 可以使用两阶段或者三阶段提交协议来完成分布式事务.但是使用这种方式一般来说性能较差,
-因为事务管理器需要在多个数据源之间进行多次等待.
-有一种方法同样可以解决分布式事务问题, 并且性能较好, 这就是我这篇文章要介绍的使用事件,本地事务以及消息队列来实现分布式事务.</p>
-
-<p>我们从一个简单的实例入手. 基本所有互联网应用都会有用户注册的功能. 在这个例子中, 我们对于用户注册有两步操作: <br/>
-1. 注册成功, 保存用户信息.<br/>
-2. 需要给用户发放一张代金券, 目的是鼓励用户进行消费.<br/>
-如果是一个单一架构应用, 实现这个功能非常简单: 在一个本地事务里, 往用户表插一条记录, 并且在代金券表里插一条记录, 提交事务就完成了.
-但是如果我们的应用是用微服务实现的, 可能用户和代金券是两个独立的服务, 他们有各自的应用和数据库,
-那么就没有办法简单的使用本地事务来保证操作的原子性了.
-现在来看看如何使用事件机制和消息队列来实现这个需求.(我在这里使用的消息队列是kafka, 原理同样适用于ActiveMQ/RabbitMQ等其他队列)</p>
-
-<p>我们会为用户注册这个操作创建一个事件, 该事件就叫做用户创建事件(USER_CREATED). 用户服务成功保存用户记录后, 会发送用户创建事件到消息队列,
-代金券服务会监听用户创建事件, 一旦接收到该事件, 代金券服务就会在自己的数据库中为该用户创建一张代金券.
-好了, 这些步骤看起来都相当的简单直观, 但是怎么保证事务的原子性呢? 考虑下面这两个场景:<br/>
-1. 用户服务在保存用户记录, 还没来得及向消息队列发送消息之前就宕机了. 怎么保证用户创建事件一定发送到消息队列了?<br/>
-2. 代金券服务接收到用户创建事件, 还没来得及处理事件就宕机了. 重新启动之后如何消费之前的用户创建事件?<br/>
-这两个问题的本质是: 如何让操作数据库和操作消息队列这两个操作成为一个原子操作.
-不考虑2PC, 这里我们可以通过事件表来解决这个问题. 下面是类图.
-<img src="/images/custom/20160421/event_class.png"></p>
-
-<p>EventPublish是记录待发布事件的表. 其中:<br/>
-id: 每个事件在创建的时候都会生成一个全局唯一ID, 例如UUID.<br/>
-status: 事件状态, 枚举类型. 现在只有两个状态: 待发布(NEW), 已发布(PUBLISHED).<br/>
-payload: 事件内容. 这里我们会将事件内容转成json存到这个字段里.<br/>
-eventType: 事件类型, 枚举类型. 每个事件都会有一个类型, 比如我们之前提到的创建用户USER_CREATED就是一个事件类型.<br/>
-EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同.</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2016/04/21/springcloud1/">继续阅读 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -510,6 +510,10 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
     <section>
   <h1>最新文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/08/25/springcloud4/">微服务框架Spring Cloud介绍 Part4: 使用Eureka, Ribbon, Feign实现REST服务客户端</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2016/08/10/springcloud3/">微服务框架Spring Cloud介绍 Part3: Mysteam项目结构与开发用户注册服务</a>
@@ -547,10 +551,6 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
         <a href="/blog/2015/08/17/play2/">给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015/07/27/play1/">给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景</a>
-      </li>
-    
   </ul>
 </section>
 <section>
@@ -558,10 +558,10 @@ EventProcess是用来记录待处理的事件. 字段与EventPublish基本相同
 	<ul id="categories">
 		<li class='category'><a href='/blog/categories/finagle/'>finagle (3)</a></li>
 <li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
-<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (3)</a></li>
+<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (4)</a></li>
 <li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
 <li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
-<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (6)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (7)</a></li>
 
 	</ul>
 </section>

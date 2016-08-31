@@ -9,10 +9,7 @@
   <meta name="author" content="skaka">
 
   
-  <meta name="description" content="1. 什么是性能监控系统 这里说的性能监控系统，主要侧重点是监控应用系统的性能。
-说直白点就是每个业务（例如注册，登录）的请求响应时间，请求次数等信息。
-操作系统的监控不是这里的重点，因为业界已经有许多相当成熟的基于Linux的运维系统。
-操作系统的运维和应用系统的运维是两码事， &hellip;">
+  <meta name="description" content="1. 关于这篇系列 这篇系列不是Play框架的Hello World，因为这样的文章网上已经有很多。 这篇系列会首先结合实际代码介绍Play的特点以及适用场景，然后会有几篇文章介绍Play与Spring，JPA（Hibernate）的集成，以及一些Play应用的最佳实践， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -107,6 +104,58 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015/07/27/play1/">给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-07-27T16:46:32+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:46 pm</span></time>
+        
+        
+         | <a href="/blog/2015/07/27/play1/#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>1. 关于这篇系列</h3>
+
+<p>这篇系列不是Play框架的Hello World，因为这样的文章网上已经有很多。</p>
+
+<p>这篇系列会首先结合实际代码介绍Play的特点以及适用场景，然后会有几篇文章介绍Play与Spring，JPA（Hibernate）的集成，以及一些Play应用的最佳实践，
+这期间会在Github上提供一个脚手架项目，方便感兴趣的朋友直接动手尝试。最后会简单分析Play的部分源码，帮助大家理解黑盒子的内部机制。</p>
+
+<p>我水平有限，有错误欢迎指出。</p>
+
+<h3>2. Play介绍</h3>
+
+<p>Play Framework是一个开源的Web框架，背后商业公司是Typesafe。要介绍Play之前，首先理清Play的两个不同的分支。
+Play 1.x 使用Java开发，最新版本是1.3.1，只支持Java项目。从11年开始就进入了维护阶段，新项目一般不考虑使用Play1。
+Play 2.x 使用Scala和Java开发，同时支持Java和Scala项目。
+这里主要介绍最新的Play2.4 for Java。有一点需要提前说明，虽然Play2主要由Scala开发，但是对于项目中的一般开发人员而言，
+使用Play可以完全不懂Scala，具体情况后面会说明。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015/07/27/play1/">继续阅读 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015/07/21/kamon-statsd-graphite-grafana-introduction/">使用StatsD, Graphite, Grafana, Kamon搭建可用于JVM项目的可视化性能监控系统</a></h1>
     
     
@@ -166,6 +215,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/08/25/springcloud4/">微服务框架Spring Cloud介绍 Part4: 使用Eureka, Ribbon, Feign实现REST服务客户端</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/08/10/springcloud3/">微服务框架Spring Cloud介绍 Part3: Mysteam项目结构与开发用户注册服务</a>
       </li>
     
@@ -201,10 +254,6 @@
         <a href="/blog/2015/08/17/play2/">给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015/07/27/play1/">给Java开发者的Play Framework(2.4)介绍 Part1：Play的优缺点以及适用场景</a>
-      </li>
-    
   </ul>
 </section>
 <section>
@@ -212,10 +261,10 @@
 	<ul id="categories">
 		<li class='category'><a href='/blog/categories/finagle/'>finagle (3)</a></li>
 <li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
-<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (3)</a></li>
+<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (4)</a></li>
 <li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
 <li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
-<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (6)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (7)</a></li>
 
 	</ul>
 </section>
