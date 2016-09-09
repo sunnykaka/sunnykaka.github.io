@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://skaka.me/blog/2016/09/04/springcloud5/</loc>
+    <lastmod>2016-09-04T21:03:22+08:00</lastmod>
+  </url>
+  <url>
     <loc>http://skaka.me/blog/2016/08/25/springcloud4/</loc>
     <lastmod>2016-08-25T19:52:31+08:00</lastmod>
   </url>
@@ -71,5 +75,11 @@
   </url>
   <url>
     <loc>http://skaka.me/blog/categories/fen-bu-shi-shi-wu/</loc>
+  </url>
+  <url>
+    <loc>http://skaka.me/posts/2/</loc>
+  </url>
+  <url>
+    <loc>http://skaka.me/posts/3/</loc>
   </url>
 </urlset>

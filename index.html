@@ -9,8 +9,8 @@
   <meta name="author" content="skaka">
 
   
-  <meta name="description" content="在上一篇文章中我们开发了一个用户注册服务. 这篇文章我将介绍如何开发mysteam订单服务中的下单功能,
-下单功能会涉及服务之间的交互与事件的处理, 并且我会对开发过程中用到的框架和类库进行简单地讲解. 开始写代码之前, 我们先来看看下单的处理流程: 其中1,2,3,4, &hellip;">
+  <meta name="description" content="通过前面几篇文章的介绍, 我们已经能够使用Spring Cloud开发出一个简单的系统了. 这篇文章里, 我们将关注点转移到如何提高微服务系统的容错性(Fault Tolerance),
+并了解如何借助Hystrix开发健壮的微服务. 以往我们在开发单体应用, 或者调用RPC服务的时候, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -27,7 +27,7 @@
   <!--
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   -->
-  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="/javascripts/jquery.min.js"></script>
   <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
   <script src="/javascripts/octopress.js" type="text/javascript"></script>
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts
@@ -35,8 +35,13 @@
 <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 -->
 
+<!--
 <link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+-->
+
+<link href="/css/PT_Sans.css" rel="stylesheet" type="text/css">
+<link href="/css/PT_Serif.css" rel="stylesheet" type="text/css">
 
   
 
@@ -99,6 +104,116 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/09/04/springcloud5/">微服务框架Spring Cloud介绍 Part5: 在微服务系统中使用Hystrix, Hystrix Dashboard与Turbine</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-09-04T21:03:22+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>9:03 pm</span></time>
+        
+        
+         | <a href="/blog/2016/09/04/springcloud5/#comments">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>通过前面几篇文章的介绍, 我们已经能够使用Spring Cloud开发出一个简单的系统了. 这篇文章里, 我们将关注点转移到如何提高微服务系统的容错性(Fault Tolerance),
+并了解如何借助Hystrix开发健壮的微服务.</p>
+
+<p>以往我们在开发单体应用, 或者调用RPC服务的时候, 可能没有考虑太多目标服务调用失败的情况, 经常一个Try/Catch加上打印日志就解决了.
+但是在微服务系统中, 这种处理方法会给系统的稳定性带来很大隐患.举个例子, 假设我们系统中下单的功能要依赖50个服务, 每个服务正常响应的概率为99.99%,
+如果我们不做容错处理, 只要任意一个服务没有响应下单就失败的话, 我们下单成功的概率为</p>
+
+<blockquote><p>99.99<sup>50</sup>  =  99.5%</p></blockquote>
+
+<p>日订单量为1W的话, 50个会出现下单失败, 这还是建立在依赖服务稳定性很高的情况下(4个9). 但是服务调用失败引起的问题不仅仅是这么简单, 在分布式环境下,
+一个服务的调用失败可能会使其他被依赖服务发生延迟和超时, 而且这个影响会很快扩散到其他服务, 从而引发整个系统的雪崩(Avalanche).</p>
+
+<h4>1. hystrix介绍</h4>
+
+<p>这篇文章要介绍的Hystrix是一个Java类库, 它提供下面这些功能来帮助我们构建健壮的微服务系统:(对Hystrix已经比较熟悉的同学可以直接跳过这段到下面的Hystrix javanica介绍)<br/>
+<strong>1.断路器机制</strong><br/>
+断路器很好理解, 当Hystrix Command请求后端服务失败数量超过一定比例(默认50%), 断路器会切换到开路状态(Open). 这时所有请求会直接失败而不会发送到后端服务.
+断路器保持在开路状态一段时间后(默认5秒), 自动切换到半开路状态(HALF-OPEN). 这时会判断下一次请求的返回情况, 如果请求成功, 断路器切回闭路状态(CLOSED), 否则重新切换到开路状态(OPEN).
+Hystrix的断路器就像我们家庭电路中的保险丝, 一旦后端服务不可用, 断路器会直接切断请求链, 避免发送大量无效请求影响系统吞吐量, 并且断路器有自我检测并恢复的能力.<br/>
+<strong>2.Fallback</strong><br/>
+Fallback相当于是降级操作. 对于查询操作, 我们可以实现一个fallback方法, 当请求后端服务出现异常的时候, 可以使用fallback方法返回的值. fallback方法的返回值一般是设置的默认值或者来自缓存.<br/>
+<strong>3.资源隔离</strong><br/>
+在Hystrix中, 主要通过线程池来实现资源隔离. 通常在使用的时候我们会根据调用的远程服务划分出多个线程池. 例如调用产品服务的Command放入A线程池, 调用账户服务的Command放入B线程池.
+这样做的主要优点是运行环境被隔离开了. 这样就算调用服务的代码存在bug或者由于其他原因导致自己所在线程池被耗尽时, 不会对系统的其他服务造成影响.
+但是带来的代价就是维护多个线程池会对系统带来额外的性能开销. 如果是对性能有严格要求而且确信自己调用服务的客户端代码不会出问题的话, 可以使用Hystrix的信号模式(Semaphores)来隔离资源.</p>
+
+<p>以上是对Hystrix的简单介绍, 如果想进一步了解Hystrix可以访问<a href="https://github.com/Netflix/Hystrix/wiki">GitHub</a>. 现在我们来看如何编写一个Hystrix Command, 代码来自Hystrix的Github:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CommandHelloFailure</span> <span class="kd">extends</span> <span class="n">HystrixCommand</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">CommandHelloFailure</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">super</span><span class="o">(</span><span class="n">Setter</span><span class="o">.</span><span class="na">withGroupKey</span><span class="o">(</span><span class="n">HystrixCommandGroupKey</span><span class="o">.</span><span class="na">Factory</span><span class="o">.</span><span class="na">asKey</span><span class="o">(</span><span class="s">&quot;ExampleGroup&quot;</span><span class="o">))</span>
+</span><span class='line'>                      <span class="o">.</span><span class="na">andCommandKey</span><span class="o">(</span><span class="n">HystrixCommandKey</span><span class="o">.</span><span class="na">Factory</span><span class="o">.</span><span class="na">asKey</span><span class="o">(</span><span class="s">&quot;HelloWorld&quot;</span><span class="o">))</span>
+</span><span class='line'>                      <span class="o">.</span><span class="na">andThreadPoolKey</span><span class="o">(</span><span class="n">HystrixThreadPoolKey</span><span class="o">.</span><span class="na">Factory</span><span class="o">.</span><span class="na">asKey</span><span class="o">(</span><span class="s">&quot;HelloWorldPool&quot;</span><span class="o">)));</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">String</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;hello world&quot;</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">String</span> <span class="nf">getFallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;Hello Failure &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot;!&quot;</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>编写一个Hystrix Command, 需要继承<code>HystrixCommand</code>类, 在<code>run</code>方法中完成你的业务逻辑. 你可以重写<code>getFallback</code>方法来在run方法抛出异常的时候返回备用的结果.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016/09/04/springcloud5/">继续阅读 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -408,95 +523,6 @@ method3无参数, 无返回值.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/05/01/finagle2/">微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-05-01T10:17:35+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2016</span></span> <span class='time'>10:17 am</span></time>
-        
-        
-         | <a href="/blog/2016/05/01/finagle2/#comments">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>在<a href="http://skaka.me/blog/2016/03/19/finagle1/">上篇文章</a>中我介绍了Finagle中的Future/Service/Filter.
-这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
-这两篇文章对应的源代码地址在<a href="https://github.com/sunnykaka/java-finagle-example">Github</a>.
-代码中有Java和Scala版本两套版本的实现, 但是这里我只会介绍Java版本.</p>
-
-<p>首先来看echo应用的Server端代码, 打开<code>java-finagle-example/src/main/java/com/akkafun/finagle/Server.java</code>:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Server</span> <span class="kd">extends</span> <span class="n">Service</span><span class="o">&lt;</span><span class="n">Request</span><span class="o">,</span> <span class="n">Response</span><span class="o">&gt;</span> <span class="o">{</span>                             <span class="c1">//1</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span> <span class="nf">apply</span><span class="o">(</span><span class="n">Request</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>                                 <span class="c1">//2</span>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;request: &quot;</span> <span class="o">+</span> <span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
-</span><span class='line'>        <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">Response</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">Version</span><span class="o">.</span><span class="na">Http11$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="n">Status</span><span class="o">.</span><span class="na">Ok</span><span class="o">());</span>
-</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setContentString</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">Future</span><span class="o">.</span><span class="na">value</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Server</span> <span class="n">service</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Server</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ListeningServer</span> <span class="n">server</span> <span class="o">=</span> <span class="n">Http</span><span class="o">.</span><span class="na">server</span><span class="o">().</span>                                      <span class="c1">//3</span>
-</span><span class='line'>                <span class="n">withLabel</span><span class="o">(</span><span class="s">&quot;echo-server&quot;</span><span class="o">).</span>
-</span><span class='line'>                <span class="n">withTracer</span><span class="o">(</span><span class="n">ZipkinTracer</span><span class="o">.</span><span class="na">mk</span><span class="o">(</span><span class="s">&quot;192.168.99.100&quot;</span><span class="o">,</span>
-</span><span class='line'>                    <span class="mi">9410</span><span class="o">,</span> <span class="n">DefaultStatsReceiver$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="mf">1.0f</span><span class="o">)).</span>
-</span><span class='line'>                <span class="n">serve</span><span class="o">(</span><span class="k">new</span> <span class="nf">InetSocketAddress</span><span class="o">(</span><span class="mi">8081</span><span class="o">),</span> <span class="n">service</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">result</span><span class="o">(</span><span class="n">server</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2016/05/01/finagle2/">继续阅读 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -510,6 +536,10 @@ method3无参数, 无返回值.</p>
     <section>
   <h1>最新文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/09/04/springcloud5/">微服务框架Spring Cloud介绍 Part5: 在微服务系统中使用Hystrix, Hystrix Dashboard与Turbine</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2016/08/25/springcloud4/">微服务框架Spring Cloud介绍 Part4: 使用Eureka, Ribbon, Feign实现REST服务客户端</a>
@@ -547,10 +577,6 @@ method3无参数, 无返回值.</p>
         <a href="/blog/2015/09/13/play3/">给Java开发者的Play Framework(2.4)介绍 Part3：搭建Play的开发环境</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015/08/17/play2/">给Java开发者的Play Framework(2.4)介绍 Part2：使用Play，Spring，JPA进行开发</a>
-      </li>
-    
   </ul>
 </section>
 <section>
@@ -558,10 +584,10 @@ method3无参数, 无返回值.</p>
 	<ul id="categories">
 		<li class='category'><a href='/blog/categories/finagle/'>finagle (3)</a></li>
 <li class='category'><a href='/blog/categories/play-framework/'>play framework (4)</a></li>
-<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (4)</a></li>
+<li class='category'><a href='/blog/categories/spring-cloud/'>spring cloud (5)</a></li>
 <li class='category'><a href='/blog/categories/han-shu-shi-bian-cheng/'>函数式编程 (1)</a></li>
 <li class='category'><a href='/blog/categories/fen-bu-shi-shi-wu/'>分布式事务 (1)</a></li>
-<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (7)</a></li>
+<li class='category'><a href='/blog/categories/wei-fu-wu/'>微服务 (8)</a></li>
 
 	</ul>
 </section>

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 微服务 | skaka的博客]]></title>
   <link href="http://skaka.me/blog/categories/wei-fu-wu/atom.xml" rel="self"/>
   <link href="http://skaka.me/"/>
-  <updated>2016-09-01T01:14:29+08:00</updated>
+  <updated>2016-09-10T01:33:58+08:00</updated>
   <id>http://skaka.me/</id>
   <author>
     <name><![CDATA[skaka]]></name>
@@ -12,6 +12,179 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[微服务框架Spring Cloud介绍 Part5: 在微服务系统中使用Hystrix, Hystrix Dashboard与Turbine]]></title>
+    <link href="http://skaka.me/blog/2016/09/04/springcloud5/"/>
+    <updated>2016-09-04T21:03:22+08:00</updated>
+    <id>http://skaka.me/blog/2016/09/04/springcloud5</id>
+    <content type="html"><![CDATA[通过前面几篇文章的介绍, 我们已经能够使用Spring Cloud开发出一个简单的系统了. 这篇文章里, 我们将关注点转移到如何提高微服务系统的容错性(Fault Tolerance),
+并了解如何借助Hystrix开发健壮的微服务.  
+
+以往我们在开发单体应用, 或者调用RPC服务的时候, 可能没有考虑太多目标服务调用失败的情况, 经常一个Try/Catch加上打印日志就解决了.
+但是在微服务系统中, 这种处理方法会给系统的稳定性带来很大隐患.举个例子, 假设我们系统中下单的功能要依赖50个服务, 每个服务正常响应的概率为99.99%,
+如果我们不做容错处理, 只要任意一个服务没有响应下单就失败的话, 我们下单成功的概率为
+
+>99.99<sup>50</sup>  =  99.5%
+
+日订单量为1W的话, 50个会出现下单失败, 这还是建立在依赖服务稳定性很高的情况下(4个9). 但是服务调用失败引起的问题不仅仅是这么简单, 在分布式环境下,
+一个服务的调用失败可能会使其他被依赖服务发生延迟和超时, 而且这个影响会很快扩散到其他服务, 从而引发整个系统的雪崩(Avalanche).
+
+####1. hystrix介绍
+这篇文章要介绍的Hystrix是一个Java类库, 它提供下面这些功能来帮助我们构建健壮的微服务系统:(对Hystrix已经比较熟悉的同学可以直接跳过这段到下面的Hystrix javanica介绍)  
+**1.断路器机制**  
+断路器很好理解, 当Hystrix Command请求后端服务失败数量超过一定比例(默认50%), 断路器会切换到开路状态(Open). 这时所有请求会直接失败而不会发送到后端服务.
+断路器保持在开路状态一段时间后(默认5秒), 自动切换到半开路状态(HALF-OPEN). 这时会判断下一次请求的返回情况, 如果请求成功, 断路器切回闭路状态(CLOSED), 否则重新切换到开路状态(OPEN).
+Hystrix的断路器就像我们家庭电路中的保险丝, 一旦后端服务不可用, 断路器会直接切断请求链, 避免发送大量无效请求影响系统吞吐量, 并且断路器有自我检测并恢复的能力.  
+**2.Fallback**  
+Fallback相当于是降级操作. 对于查询操作, 我们可以实现一个fallback方法, 当请求后端服务出现异常的时候, 可以使用fallback方法返回的值. fallback方法的返回值一般是设置的默认值或者来自缓存.  
+**3.资源隔离**  
+在Hystrix中, 主要通过线程池来实现资源隔离. 通常在使用的时候我们会根据调用的远程服务划分出多个线程池. 例如调用产品服务的Command放入A线程池, 调用账户服务的Command放入B线程池.
+这样做的主要优点是运行环境被隔离开了. 这样就算调用服务的代码存在bug或者由于其他原因导致自己所在线程池被耗尽时, 不会对系统的其他服务造成影响.
+但是带来的代价就是维护多个线程池会对系统带来额外的性能开销. 如果是对性能有严格要求而且确信自己调用服务的客户端代码不会出问题的话, 可以使用Hystrix的信号模式(Semaphores)来隔离资源.  
+
+以上是对Hystrix的简单介绍, 如果想进一步了解Hystrix可以访问[GitHub](https://github.com/Netflix/Hystrix/wiki). 现在我们来看如何编写一个Hystrix Command, 代码来自Hystrix的Github:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CommandHelloFailure</span> <span class="kd">extends</span> <span class="n">HystrixCommand</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">CommandHelloFailure</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">super</span><span class="o">(</span><span class="n">Setter</span><span class="o">.</span><span class="na">withGroupKey</span><span class="o">(</span><span class="n">HystrixCommandGroupKey</span><span class="o">.</span><span class="na">Factory</span><span class="o">.</span><span class="na">asKey</span><span class="o">(</span><span class="s">&quot;ExampleGroup&quot;</span><span class="o">))</span>
+</span><span class='line'>                      <span class="o">.</span><span class="na">andCommandKey</span><span class="o">(</span><span class="n">HystrixCommandKey</span><span class="o">.</span><span class="na">Factory</span><span class="o">.</span><span class="na">asKey</span><span class="o">(</span><span class="s">&quot;HelloWorld&quot;</span><span class="o">))</span>
+</span><span class='line'>                      <span class="o">.</span><span class="na">andThreadPoolKey</span><span class="o">(</span><span class="n">HystrixThreadPoolKey</span><span class="o">.</span><span class="na">Factory</span><span class="o">.</span><span class="na">asKey</span><span class="o">(</span><span class="s">&quot;HelloWorldPool&quot;</span><span class="o">)));</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">String</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;hello world&quot;</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">String</span> <span class="nf">getFallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;Hello Failure &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot;!&quot;</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+编写一个Hystrix Command, 需要继承`HystrixCommand`类, 在`run`方法中完成你的业务逻辑. 你可以重写`getFallback`方法来在run方法抛出异常的时候返回备用的结果.
+
+<!--more-->
+
+####2. Hystrix javanica介绍
+
+上面的代码写起来有点繁琐, 好在有[javanica](https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-javanica). 这是Hystrix开源社区贡献的一个类库.
+使用javanica, 你不需要继承`HystrixCommand`, 只要在方法上添加`@HystrixCommand`注解, 你的方法就能够通过Hystrix运行. 例如下面的代码:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@HystrixCommand</span><span class="o">(</span><span class="n">groupKey</span><span class="o">=</span><span class="s">&quot;ExampleGroup&quot;</span><span class="o">,</span> <span class="n">commandKey</span> <span class="o">=</span> <span class="s">&quot;HelloWorld&quot;</span><span class="o">,</span>
+</span><span class='line'>         <span class="n">threadPoolKey</span><span class="o">=</span><span class="s">&quot;HelloWorldPool&quot;</span><span class="o">,</span> <span class="n">fallbackMethod</span> <span class="o">=</span> <span class="s">&quot;defaultHello&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">getUserById</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="s">&quot;hello world&quot;</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="nf">defaultHello</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="s">&quot;Hello Failure &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot;!&quot;</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+这段代码与之前的继承`HystrixCommand`代码所完成的工作是一样的, 如果习惯了使用Java注解和Spring, 一般会更习惯javanica的开发方式.
+
+####3. 在Spring Cloud中使用Hystrix
+了解了Hystrix和javanica, 现在我们来看看如何在基于Spring Cloud的项目中使用Hystrix.
+#####1. 添加maven依赖
+在pom.xml文件中加入下面的依赖
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;dependency&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;groupId&gt;</span>org.springframework.cloud<span class="nt">&lt;/groupId&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;artifactId&gt;</span>spring-cloud-starter-hystrix<span class="nt">&lt;/artifactId&gt;</span>
+</span><span class='line'><span class="nt">&lt;/dependency&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+mysteam项目里, 依赖被加到了`$YOUR_PATH/mysteam/common/pom.xml`文件中.
+
+#####2. Spring配置加上@EnableHystrix注解
+`BaseConfiguration`类中加了这个注解, 文件位置在`$YOUR_PATH/mysteam/common/src/main/java/com/akkafun/common/spring/BaseConfiguration.java`.
+
+#####3. 方法上添加@HystrixCommand注解
+上篇文章中我们开发了下单的功能. 为了查询账户余额是否足够, 我们调用了`AccountGateway`的`isBalanceEnough`方法:
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@HystrixCommand</span><span class="o">(</span><span class="n">ignoreExceptions</span> <span class="o">=</span> <span class="n">RemoteCallException</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">isBalanceEnough</span><span class="o">(</span><span class="n">Long</span> <span class="n">userId</span><span class="o">,</span> <span class="n">Long</span> <span class="n">amount</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">accountClient</span><span class="o">.</span><span class="na">checkEnoughBalance</span><span class="o">(</span><span class="n">userId</span><span class="o">,</span> <span class="n">amount</span><span class="o">).</span><span class="na">isSuccess</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+这里我们没有指定`commandKey`和`groupKey`参数, `commandKey`的默认值是方法名称`isBalanceEnough`, `groupKey`的默认值是类名`AccountGateway`.
+javanica使用AOP来完成普通方法到Hystrix Command的转换, 所以我们只需要在方法上加上`@HystrixCommand`注解, 就能让这个方法成为一个Hystrix Command了, 相当便捷.
+这里说明一下`ignoreExceptions = RemoteCallException.class`这个配置的含义. 在Hystrix Command的`run`方法执行的时候, 如果抛出了`HystrixBadRequestException`异常,
+是不会触发Fallback逻辑而是直接失败, 这个异常一般被用来提示客户端参数请求错误或者其他需要直接失败的错误.
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@HystrixCommand</span><span class="o">(</span><span class="n">ignoreExceptions</span> <span class="o">=</span> <span class="n">RemoteCallException</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+这个配置的意思是, 如果方法中抛出了`RemoteCallException`(这个异常是我们自己定义的), javanica会负责将异常包装为`HystrixBadRequestException`并抛出.
+这里指定`RemoteCallException`是因为在mysteam中, 远程服务返回的正常错误信息会被包装为`RemoteCallException`抛出, 因为是正常的返回, 我们不想让Hystrix执行Fallback逻辑,
+所以在这里配置了ignoreExceptions参数(如果想了解mysteam的http请求和异常处理逻辑, 可以查看`CustomRestTemplate`类和`RestTemplateErrorHandler`类的代码).
+
+####4. 在Spring Cloud中使用Hystrix Dashboard和Turbine
+针对生产环境, Netflix还给我们准备了一个非常好用的运维工具,
+那就是[Hystrix Dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard)和[Turbine](https://github.com/Netflix/Turbine).  
+先上一张图有个直观感受, 来自Turbine的GitHub
+<img src="https://github.com/Netflix/Turbine/wiki/images/NetflixDash.jpg">
+通过Hystrix Dashboard我们可以在直观地看到各Hystrix Command的请求响应时间, 请求成功率等数据. 但是只使用Hystrix Dashboard的话, 你只能看到单个应用内的服务信息, 这明显不够.
+我们需要一个工具能让我们汇总系统内多个服务的数据并显示到Hystrix Dashboard上, 这个工具就是Turbine.  
+
+我在mysteam中已经加了一个turbine模块, 模块名称是`turbine`, 接下来, 让我们启动turbine服务.
+#####1. 首先启动EurekaApplication和ConfigApplication
+关于mysteam中为什么要先启动这两个服务, 可以参看我[之前的文章](http://skaka.me/blog/2016/08/03/springcloud2/).
+#####2. 启动turbine模块下的TurbineApplication
+启动完成之后, 打开链接[http://localhost:7777/hystrix](http://localhost:7777/hystrix), 你应该能看见可爱的豪猪logo. 在页面中部的输入框输入你要监控的turbine流地址, 例如输入
+`http://localhost:7777/turbine.stream?cluster=ORDER`, 代表我们要监控ORDER服务下所有实例的Hystrix. 输入完成点击`Monitor Stream`按钮, 你就能进入监控UI了. 但是这时应该还没有显示图表,
+因为ORDER服务还没有启动. 到此为止, 如果你只是想启动Turbine服务, 那么你已经完成了. 但是如果你想看到实际的监控信息, 还需要启动其他服务并构造数据. 接下来让我们启动其他的5个服务.
+#####3. 启动AccountApplication, CouponApplication, OrderApplication, ProductApplication, UserApplication
+#####4. 运行integration-test模块下的OrderIntegrationTest.testCreateOrderSuccess方法生成测试数据
+`OrderIntegrationTest`类的位置在`$YOUR_PATH/mysteam/integration-test/core/src/test/java/com/akkafun/integrationtest/order/OrderIntegrationTest.java`, 这是一个下单功能的集成测试类.
+这个类会模拟真实用户下单, 所以运行这个测试类之前需要把依赖的服务全部启动好. `testCreateOrderSuccess`测试方法运行完成之后, 在浏览器里你应该能看见如下的界面
+<img src="/images/custom/20160904/turbine.png">
+这张图里, `Circuit`标签下显示的是断路器信息, 其中显示了ORDER服务的两个断路器, 分别是`findProducts`和`isBalanceEnough`, 并且状态都是`Closed`. `Thread Pools`标签下显示的是线程池的信息.
+这张图里各参数的详细含义, 大家可以参考[Dashboard的Wiki](https://github.com/Netflix/Hystrix/wiki/Dashboard). 通过Hystrix Dashboard和Turbine, 我们能够很方便地监控每个Hystrix Command的运行情况,
+在出现问题的时候能够及时定位到问题所在的服务. Tubine本质是一个数据聚合服务, 我们可以使用Turbine的数据开发一些定制的功能. 比如我之前开发的预警系统, 会实时对Turbine的流式数据进行消费,
+在发现Hystrix Command调用失败次数达到一定阀值的时候, 会根据调用链定位到疑似的问题服务并发出告警. 你也可以很容易的将Hystrix Dashbord和Turbine整合到你自己的监控系统里.  
+
+这一篇文章介绍的Hystrix和上一篇文章介绍的Eureka, Ribbon都属于Spring Cloud Netflix这个子项目的内容. 下一篇里我们将把目光移到分布式系统最重要的中间件: MQ,
+了解如何使用Spring Cloud Stream与Kafka交互.
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[微服务框架Spring Cloud介绍 Part4: 使用Eureka, Ribbon, Feign实现REST服务客户端]]></title>
@@ -900,215 +1073,6 @@ Finagle的开发实战就暂时介绍到这里. 通过前面的介绍你应该�
 但是实际的多服务项目中, 几乎不会直接通过ip和端口来访问服务,
 而是使用[zookeeper](http://zookeeper.apache.org/)或[etcd](https://github.com/coreos/etcd)这种注册中心来完成.
 下篇文章我会介绍如何将Finagle服务注册到zookeeper中以及如何使用[zipkin](https://github.com/twitter/zipkin)来监控Finagle服务.
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[微服务框架Finagle介绍 Part2: 在Finagle中开发基于Http协议的应用]]></title>
-    <link href="http://skaka.me/blog/2016/05/01/finagle2/"/>
-    <updated>2016-05-01T10:17:35+08:00</updated>
-    <id>http://skaka.me/blog/2016/05/01/finagle2</id>
-    <content type="html"><![CDATA[在[上篇文章](http://skaka.me/blog/2016/03/19/finagle1/)中我介绍了Finagle中的Future/Service/Filter.
-这篇文章里, 我们将构建一个基于Http协议的echo服务端和客户端, 下篇文章将构建一个基于thrift协议的客户端和服务端.
-这两篇文章对应的源代码地址在[Github](https://github.com/sunnykaka/java-finagle-example).
-代码中有Java和Scala版本两套版本的实现, 但是这里我只会介绍Java版本.  
-
-首先来看echo应用的Server端代码, 打开`java-finagle-example/src/main/java/com/akkafun/finagle/Server.java`:
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Server</span> <span class="kd">extends</span> <span class="n">Service</span><span class="o">&lt;</span><span class="n">Request</span><span class="o">,</span> <span class="n">Response</span><span class="o">&gt;</span> <span class="o">{</span>                             <span class="c1">//1</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Future</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span> <span class="nf">apply</span><span class="o">(</span><span class="n">Request</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>                                 <span class="c1">//2</span>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;request: &quot;</span> <span class="o">+</span> <span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
-</span><span class='line'>        <span class="n">Response</span> <span class="n">response</span> <span class="o">=</span> <span class="n">Response</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">Version</span><span class="o">.</span><span class="na">Http11$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="n">Status</span><span class="o">.</span><span class="na">Ok</span><span class="o">());</span>
-</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setContentString</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getContentString</span><span class="o">());</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">Future</span><span class="o">.</span><span class="na">value</span><span class="o">(</span><span class="n">response</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Server</span> <span class="n">service</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Server</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ListeningServer</span> <span class="n">server</span> <span class="o">=</span> <span class="n">Http</span><span class="o">.</span><span class="na">server</span><span class="o">().</span>                                      <span class="c1">//3</span>
-</span><span class='line'>                <span class="n">withLabel</span><span class="o">(</span><span class="s">&quot;echo-server&quot;</span><span class="o">).</span>
-</span><span class='line'>                <span class="n">withTracer</span><span class="o">(</span><span class="n">ZipkinTracer</span><span class="o">.</span><span class="na">mk</span><span class="o">(</span><span class="s">&quot;192.168.99.100&quot;</span><span class="o">,</span>
-</span><span class='line'>                    <span class="mi">9410</span><span class="o">,</span> <span class="n">DefaultStatsReceiver$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="mf">1.0f</span><span class="o">)).</span>
-</span><span class='line'>                <span class="n">serve</span><span class="o">(</span><span class="k">new</span> <span class="nf">InetSocketAddress</span><span class="o">(</span><span class="mi">8081</span><span class="o">),</span> <span class="n">service</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Await</span><span class="o">.</span><span class="na">result</span><span class="o">(</span><span class="n">server</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-<!--more-->
-1. 在Finagle中, 实现一个RPC服务非常简单. 只需要继承Service抽象类, 实现它的apply方法.
-Service抽象类有两个类型参数, 第一个类型参数代表的是请求对象, 第二个类型参数代表的是返回对象.
-这两个对象的具体类型与Service实现类使用的具体协议有关.
-例如我们在echo服务中使用Http协议, 对应的Request类就是`com.twitter.finagle.http.Request`,
-对应的Response类是`com.twitter.finagle.http.Response`.
-如果是thrift协议, 则这两个类型参数在Service实现类中都是`scala.Array<scala.Byte>`(Array和Byte都是scala中的类, 对应Java中的数组与byte).  
-
-2. apply方法中, 我们首先使用Response的工厂方法构造一个Response对象. 然后将Request中的请求内容原封不动的设置到Response中,
-再将Response设置到Future中返回. 需要最后一步的原因是apply方法的返回值类型是`Future<Response>`, 但是我们在这个方法中不需要进行异步操作,
-所以可以直接使用`Future.value(response)`将对象包装成Future返回.
-另外, 细心的你应该发现了一行比较碍眼的代码: `Response.apply(Version.Http11$.MODULE$, Status.Ok())`, 其中Version的用法很古怪.
-这是Java调用Scala伴生对象的副作用, Scala有一些语法和特性在Java中没有对应的概念, 这种情况下Java调用Scala的代码就会比较晦涩.  
-
-3. 为了启动Service实例, 我们需要构造一个`com.twitter.finagle.ListeningServer`. `withLabel`设置服务名称,
-`withTracer`设置监控信息, 这个等后面介绍zipkin的时候在解释. 最后指定端口启动服务.  
-
-现在来看echo应用的Client端代码, 打开`java-finagle-example/src/main/java/com/akkafun/finagle/Client.java`:
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="kn">import</span> <span class="nn">static</span> <span class="n">scala</span><span class="o">.</span><span class="na">compat</span><span class="o">.</span><span class="na">java8</span><span class="o">.</span><span class="na">JFunction</span><span class="o">.*;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Client</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">TimeoutException</span><span class="o">,</span> <span class="n">InterruptedException</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Service</span><span class="o">&lt;</span><span class="n">Request</span><span class="o">,</span> <span class="n">Response</span><span class="o">&gt;</span> <span class="n">service</span> <span class="o">=</span> <span class="n">Http</span><span class="o">.</span><span class="na">client</span><span class="o">().</span>                             <span class="c1">//1</span>
-</span><span class='line'>                <span class="n">withLabel</span><span class="o">(</span><span class="s">&quot;echo-client&quot;</span><span class="o">).</span>
-</span><span class='line'>                <span class="n">withTracer</span><span class="o">(</span><span class="n">ZipkinTracer</span><span class="o">.</span><span class="na">mk</span><span class="o">(</span><span class="s">&quot;192.168.99.100&quot;</span><span class="o">,</span>
-</span><span class='line'>                    <span class="mi">9410</span><span class="o">,</span> <span class="n">DefaultStatsReceiver$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="mf">1.0f</span><span class="o">)).</span>
-</span><span class='line'>                <span class="n">newService</span><span class="o">(</span><span class="s">&quot;127.0.0.1:8081&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//create a &quot;Greetings!&quot; request.</span>
-</span><span class='line'>        <span class="n">Reader</span> <span class="n">data</span> <span class="o">=</span> <span class="n">Reader$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">.</span><span class="na">fromStream</span><span class="o">(</span>                                       <span class="c1">//2</span>
-</span><span class='line'>            <span class="k">new</span> <span class="nf">ByteArrayInputStream</span><span class="o">(</span><span class="s">&quot;Greetings!&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">StandardCharsets</span><span class="o">.</span><span class="na">UTF_8</span><span class="o">)));</span>
-</span><span class='line'>        <span class="n">Request</span> <span class="n">request</span> <span class="o">=</span> <span class="n">Request</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">Version</span><span class="o">.</span><span class="na">Http11$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">Method</span><span class="o">.</span><span class="na">Post$</span><span class="o">.</span><span class="na">MODULE$</span><span class="o">,</span> <span class="s">&quot;/&quot;</span><span class="o">,</span> <span class="n">data</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Future</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span> <span class="n">responseFuture</span> <span class="o">=</span> <span class="n">Await</span><span class="o">.</span><span class="na">ready</span><span class="o">(</span><span class="n">service</span><span class="o">.</span><span class="na">apply</span><span class="o">(</span><span class="n">request</span><span class="o">));</span>          <span class="c1">//3</span>
-</span><span class='line'>        <span class="n">responseFuture</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="n">func</span><span class="o">(</span><span class="n">response</span> <span class="o">-&gt;</span> <span class="o">{</span>                                     <span class="c1">//4</span>
-</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&quot;response status: %s, response string: %s&quot;</span><span class="o">,</span>
-</span><span class='line'>                    <span class="n">response</span><span class="o">.</span><span class="na">status</span><span class="o">().</span><span class="na">toString</span><span class="o">(),</span> <span class="n">response</span><span class="o">.</span><span class="na">contentString</span><span class="o">()));</span>
-</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}));</span>
-</span><span class='line'>        <span class="n">responseFuture</span><span class="o">.</span><span class="na">onFailure</span><span class="o">(</span><span class="n">func</span><span class="o">(</span><span class="n">e</span> <span class="o">-&gt;</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;error: &quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}));</span>
-</span><span class='line'>        <span class="n">responseFuture</span><span class="o">.</span><span class="na">ensure</span><span class="o">(</span><span class="n">func</span><span class="o">(()</span> <span class="o">-&gt;</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">service</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
-</span><span class='line'>            <span class="c1">//IDE may complain here, just ignore</span>
-</span><span class='line'>            <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}));</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-1. 这部分代码和我们之前的Server类代码很像. 在Server类中, 我们创建了一个Service实例并监听了8081端口,
-现在客户端通过newService创建了一个Service的stub.  
-
-2. 这部分代码用来构造一个消息内容为Greetings的Http请求.  
-
-3. `service.apply(request)`就是一次客户端到服务端的RPC调用. 这个调用的返回值是`Future<Response>`.  
-而`service.apply(request)`是一个异步操作, 主线程调用这个方法并不会阻塞, 有可能主线程退出了实际调用还没有完成.
-所以这里就要用到`Await.ready`了. `Await.ready`的作用是等待一个Future执行完成再返回, 是一个同步操作.
-通过调用`Await.ready`我们就能将一个异步操作转化成一个同步操作.  
-
-4. 接下来我们在Future上注册请求成功与失败的回调函数. 请求成功的回调函数中只是简单的打印出响应的消息内容.  
-这里有个细节需要说明一下. Future的onSuccess方法需要传入一个Scala的函数特质: `scala.Function1[Response, BoxedUnit]`.
-如果是Java6或7, 我们可以这样实现这个特质:
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="n">responseFuture</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="k">new</span> <span class="n">AbstractFunction1</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">,</span> <span class="n">BoxedUnit</span><span class="o">&gt;(){</span>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">BoxedUnit</span> <span class="nf">apply</span><span class="o">(</span><span class="n">Response</span> <span class="n">response</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&quot;response status: %s, response string: %s&quot;</span><span class="o">,</span>
-</span><span class='line'>                <span class="n">response</span><span class="o">.</span><span class="na">status</span><span class="o">().</span><span class="na">toString</span><span class="o">(),</span> <span class="n">response</span><span class="o">.</span><span class="na">contentString</span><span class="o">()));</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">});</span>
-</span></code></pre></td></tr></table></div></figure>
-在Java8中, 这种匿名类我们一般会使用Lambda代替, 理想情况下写法是这样:
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="n">responseFuture</span><span class="o">.</span><span class="na">onSuccess</span><span class="o">(</span><span class="n">response</span> <span class="o">-&gt;</span> <span class="o">{</span>
-</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&quot;response status: %s, response string: %s&quot;</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">response</span><span class="o">.</span><span class="na">status</span><span class="o">().</span><span class="na">toString</span><span class="o">(),</span> <span class="n">response</span><span class="o">.</span><span class="na">contentString</span><span class="o">()));</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">BoxedUnit</span><span class="o">.</span><span class="na">UNIT</span><span class="o">;</span>
-</span><span class='line'><span class="o">});</span>
-</span></code></pre></td></tr></table></div></figure>
-可惜的是这种写法编译不会通过, 因为只有符合`FunctionalInterface`定义的接口才能使用Lambda表达式(什么是`FunctionalInterface`, 请参考[Javadoc](https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html)), 而在Scala2.11中, `scala.Function1`不是一个`FunctionalInterface`(Scala2.12会兼容Java8). 为了在这里使用Lambda, 我们使用了[scala-java8-compat](https://github.com/scala/scala-java8-compat)这个库, 调用`scala.compat.java8.JFunction.func`方法将一个`FunctionalInterface`转化成`scala.Function1`.  
-
-可以看出, 在Java中调用Finagle的API不是很方便. 所以Finagle适合以Scala为主, Java为辅的项目. 如果项目全是Java,
-则值得为Finagle主要的API写一层Java的适配层, 来屏蔽Java调用Scala代码会出现的一些晦涩代码.  
-
-现在我们启动服务端和客户端来看看运行结果.
-首先启动Server类, 然后启动Client. Client运行完毕自动结束, 你应该能在Client的控制台看到如下输出:
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="n">response</span> <span class="nl">status:</span> <span class="n">Status</span><span class="o">(</span><span class="mi">200</span><span class="o">),</span> <span class="n">response</span> <span class="nl">string:</span> <span class="n">Greetings</span><span class="o">!</span>
-</span></code></pre></td></tr></table></div></figure>
-Server控制台的输出:
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='Java'><span class='line'><span class="nl">request:</span> <span class="n">Greetings</span><span class="o">!</span>
-</span></code></pre></td></tr></table></div></figure>
-
-Http协议比较适合用于对外提供服务, 并且一般会使用REST. 在Finagle中使用REST可以使用[Finch](https://github.com/finagle/finch)库.
-这个库轻量小巧, API简单, 提供了一套很方便的对Http消息进行操作的DSL.
-如果是内网服务调用, 一般推荐使用结构紧凑, 传输效率高的协议. 比如protocol buffer, thrift或Avro.
-Finagle对thrift有很好的支持, 下篇文章我将介绍在Finagle中如何开发thrift应用.
 ]]></content>
   </entry>
   
